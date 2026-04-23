@@ -53,7 +53,6 @@ import asyncio
 import json
 import logging
 import time
-import uuid
 from collections import Counter
 from datetime import timedelta
 from io import BytesIO
@@ -72,7 +71,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 
 from .models import (
     AlertNotification,
@@ -82,7 +81,6 @@ from .models import (
     FactCheck,
     Form,
     Plugin,
-    SearchAnalytics,
     SearchCollection,
     SearchQuery,
     TopicAlert,
@@ -96,7 +94,6 @@ from .serializers import (
     AnalyticsSummarySerializer,
     APIKeyCreateSerializer,
     APIKeySerializer,
-    AuthTokenSerializer,
     BookmarkCreateSerializer,
     BookmarkSerializer,
     CollectionAddCollaboratorSerializer,
@@ -107,7 +104,6 @@ from .serializers import (
     FactCheckRequestSerializer,
     FactCheckSerializer,
     FormSerializer,
-    FormSubmissionSerializer,
     LoginSerializer,
     PluginInstallSerializer,
     PluginSerializer,
@@ -594,7 +590,6 @@ class ExportView(APIView):
     def _export_pdf(self, entries, include_sources):
         """Generate a proper PDF export using reportlab."""
         try:
-            from reportlab.lib import colors
             from reportlab.lib.pagesizes import A4
             from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
             from reportlab.lib.units import mm
@@ -602,8 +597,6 @@ class ExportView(APIView):
                 Paragraph,
                 SimpleDocTemplate,
                 Spacer,
-                Table,
-                TableStyle,
             )
         except ImportError:
             # Fallback: return markdown when reportlab not installed

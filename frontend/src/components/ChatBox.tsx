@@ -571,7 +571,7 @@ function ChatBoxInner({}: ChatBoxProps) {
                 onClick={() => setSearchMode(mode)}
                 className={`text-xs rounded-full ${
                   searchMode === mode
-                    ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white'
+                    ? 'bg-linear-to-r from-purple-600 to-blue-600 text-white'
                     : ''
                 }`}
               >
@@ -588,7 +588,7 @@ function ChatBoxInner({}: ChatBoxProps) {
                 onClick={() => setEnableFactCheck(!enableFactCheck)}
                 className={`text-xs rounded-full ${
                   enableFactCheck
-                    ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white'
+                    ? 'bg-linear-to-r from-green-600 to-emerald-600 text-white'
                     : ''
                 }`}
               >

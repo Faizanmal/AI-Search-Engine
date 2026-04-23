@@ -33,9 +33,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className="light" style={{ colorScheme: 'light' }}>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-background text-foreground`}
       >
         <Providers>
           <a
@@ -45,7 +45,11 @@ export default function RootLayout({
             Skip to main content
           </a>
           <Navigation />
-          <main id="main-content" role="main">
+          <main
+            id="main-content"
+            role="main"
+            className="relative min-h-screen pt-20 md:pt-24"
+          >
             {children}
           </main>
           <Toaster 

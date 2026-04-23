@@ -94,13 +94,13 @@ export function Navigation() {
         transition={{ duration: 0.5, ease: 'easeOut' }}
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
           isScrolled
-            ? 'glass-strong backdrop-blur-xl shadow-lg'
-            : 'bg-transparent'
+            ? 'glass-strong backdrop-blur-xl shadow-lg border-b border-border/70'
+            : 'bg-background/85 backdrop-blur-lg border-b border-border/50'
         }`}
         role="navigation"
         aria-label="Main navigation"
       >
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto w-full max-w-7xl px-3 sm:px-5 lg:px-7">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <Link href="/" aria-label="Go to homepage">
@@ -123,7 +123,7 @@ export function Navigation() {
             </Link>
 
             {/* Desktop Navigation Links */}
-            <div className="hidden md:flex items-center gap-1">
+            <div className="hidden lg:flex items-center gap-1 xl:gap-1.5 min-w-0">
               {navItems.map((item, index) => {
                 const isActive = pathname === item.href;
                 return (
@@ -137,19 +137,19 @@ export function Navigation() {
                     >
                       <Button
                         variant={isActive ? 'default' : 'ghost'}
-                        size="default"
-                        className={`relative font-medium transition-all duration-300 ${
+                        size="sm"
+                        className={`relative font-medium transition-all duration-300 px-2 xl:px-3 ${
                           isActive
-                            ? 'bg-linear-to-r from-purple-600 to-blue-600 text-white shadow-lg'
-                            : 'hover:bg-purple-50 dark:hover:bg-purple-950/20'
+                            ? 'bg-linear-to-r from-teal-600 to-cyan-700 text-white shadow-lg'
+                            : 'hover:bg-accent/70'
                         }`}
                       >
-                        <item.icon className="w-4 h-4 mr-2" />
-                        {item.label}
+                        <item.icon className="w-4 h-4 xl:mr-2" />
+                        <span className="hidden xl:inline">{item.label}</span>
                         {isActive && (
                           <motion.div
                             layoutId="activeTab"
-                            className="absolute inset-0 bg-linear-to-r from-purple-600 to-blue-600 rounded-md -z-10"
+                            className="absolute inset-0 bg-linear-to-r from-teal-600 to-cyan-700 rounded-md -z-10"
                             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                           />
                         )}
@@ -161,7 +161,7 @@ export function Navigation() {
             </div>
 
             {/* Desktop Actions */}
-            <div className="hidden md:flex items-center gap-1">
+            <div className="hidden lg:flex items-center gap-0.5 xl:gap-1">
               <TooltipProvider delayDuration={300}>
                 {/* History */}
                 <Tooltip>
@@ -244,22 +244,22 @@ export function Navigation() {
                 </Tooltip>
               </TooltipProvider>
 
-              <div className="w-px h-6 bg-border mx-1" />
+              <div className="w-px h-6 bg-border mx-1 hidden xl:block" />
 
-              <Link href="/login">
+              <Link href="/login" className="hidden xl:inline-flex">
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Button variant="ghost" size="default">
+                  <Button variant="ghost" size="sm">
                     <LogIn className="w-4 h-4 mr-2" />
-                    <span className="hidden lg:inline">Login</span>
+                    <span>Login</span>
                   </Button>
                 </motion.div>
               </Link>
 
-              <Link href="/register">
+              <Link href="/register" className="hidden xl:inline-flex">
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Button variant="gradient" size="default" className="font-semibold">
+                  <Button variant="gradient" size="sm" className="font-semibold">
                     <UserPlus className="w-4 h-4 mr-2" />
-                    <span className="hidden lg:inline">Sign Up</span>
+                    <span>Sign Up</span>
                   </Button>
                 </motion.div>
               </Link>

@@ -6,7 +6,6 @@ Fetches relevant web sources using Tavily API or SerpAPI
 import os
 import requests
 from typing import List, Dict, Optional
-from urllib.parse import quote_plus
 
 
 class WebRetriever:

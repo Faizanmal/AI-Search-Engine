@@ -62,7 +62,10 @@ class RAGPipeline:
                         resp = self.client
                 except Exception:
                     raise
-                class Resp: pass
+
+                class Resp:
+                    pass
+
                 r = Resp()
                 r.content = getattr(resp, 'text', getattr(resp, 'content', str(resp)))
                 r.usage = getattr(resp, 'usage', {})

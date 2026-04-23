@@ -67,7 +67,7 @@ export default function Home() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 dark:from-slate-950 dark:via-blue-950 dark:to-purple-950 overflow-hidden">
+    <div className="min-h-screen bg-linear-to-br from-slate-50 via-cyan-50 to-emerald-50 dark:from-slate-950 dark:via-cyan-950/40 dark:to-emerald-950/40 overflow-hidden">
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 left-4 md:left-10 w-48 h-48 md:w-72 md:h-72 bg-purple-300 dark:bg-purple-700 rounded-full mix-blend-multiply dark:mix-blend-soft-light filter blur-xl opacity-30 animate-blob"></div>
@@ -165,7 +165,7 @@ export default function Home() {
               >
                 <Card className="h-full card-hover glass border-white/30 overflow-hidden group">
                   <CardContent className="p-6 md:p-8 space-y-4 md:space-y-5">
-                    <div className={`inline-flex p-3 md:p-4 rounded-2xl bg-gradient-to-br ${feature.gradient} shadow-xl`}>
+                    <div className={`inline-flex p-3 md:p-4 rounded-2xl bg-linear-to-br ${feature.gradient} shadow-xl`}>
                       <feature.icon className="w-6 h-6 md:w-7 md:h-7 text-white" />
                     </div>
                     <h3 className="text-xl md:text-2xl font-bold">{feature.title}</h3>
@@ -187,10 +187,10 @@ export default function Home() {
         <div className="content-max-width container-padding">
           <ScaleInView>
             <Card className="glass border-white/30 overflow-hidden shadow-2xl">
-              <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 via-blue-600/10 to-pink-600/10"></div>
+              <div className="absolute inset-0 bg-linear-to-r from-teal-600/10 via-cyan-600/10 to-emerald-600/10"></div>
               <CardContent className="relative p-8 md:p-12 lg:p-16 text-center space-y-6 md:space-y-8">
               <FloatingElement>
-                <div className="inline-flex p-4 md:p-5 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 shadow-2xl mb-4 md:mb-6">
+                <div className="inline-flex p-4 md:p-5 rounded-full bg-linear-to-r from-teal-600 to-cyan-700 shadow-2xl mb-4 md:mb-6">
                   <Star className="w-8 h-8 md:w-10 md:h-10 text-white" />
                 </div>
               </FloatingElement>

@@ -54,7 +54,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center p-6 overflow-hidden relative">
       {/* Animated background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50 dark:from-slate-950 dark:via-purple-950 dark:to-blue-950">
+      <div className="absolute inset-0 bg-linear-to-br from-purple-50 via-blue-50 to-pink-50 dark:from-slate-950 dark:via-purple-950 dark:to-blue-950">
         <div className="absolute inset-0 bg-grid-pattern opacity-10"></div>
       </div>
 
@@ -103,7 +103,7 @@ export default function LoginPage() {
           <CardHeader className="text-center space-y-6 pb-8">
             <ScaleIn delay={0.2}>
               <FloatingElement yOffset={10} duration={2}>
-                <div className="mx-auto w-20 h-20 bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl flex items-center justify-center shadow-2xl">
+                <div className="mx-auto w-20 h-20 bg-linear-to-r from-purple-600 to-blue-600 rounded-2xl flex items-center justify-center shadow-2xl">
                   <Sparkles className="h-10 w-10 text-white" />
                 </div>
               </FloatingElement>
@@ -114,7 +114,7 @@ export default function LoginPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3, duration: 0.5 }}
             >
-              <CardTitle className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+              <CardTitle className="text-4xl font-bold bg-linear-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
                 Welcome Back
               </CardTitle>
               <CardDescription className="text-base mt-3 text-muted-foreground">

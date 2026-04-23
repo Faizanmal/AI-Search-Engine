@@ -98,7 +98,7 @@ export default function AlertsPage() {
           className="flex items-center justify-between mb-8"
         >
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent flex items-center gap-3">
+            <h1 className="text-3xl font-bold bg-linear-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent flex items-center gap-3">
               <Bell className="w-8 h-8 text-purple-600" />
               Topic Alerts
             </h1>
@@ -109,7 +109,7 @@ export default function AlertsPage() {
 
           <Dialog open={createOpen} onOpenChange={setCreateOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-gradient-to-r from-purple-600 to-blue-600 text-white">
+              <Button className="bg-linear-to-r from-purple-600 to-blue-600 text-white">
                 <Plus className="w-4 h-4 mr-2" /> New Alert
               </Button>
             </DialogTrigger>

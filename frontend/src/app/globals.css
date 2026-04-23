@@ -48,8 +48,33 @@
 }
 
 @theme inline {
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -275,11 +300,8 @@ body {
 }
 
 /* Focus states */
-*:focus-visible {
-  outline: 2px solid #667eea;
-  outline-offset: 2px;
-  border-radius: 4px;
-}
+/* Let standard tailwind/shadcn logic handle focus */
+
 
 /* Blob animations */
 @keyframes blob {
@@ -338,29 +360,29 @@ body {
 
 /* Enhanced Button utilities */
 .btn-gradient-primary {
-  @apply bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700;
+  @apply bg-linear-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700;
   @apply text-white shadow-lg hover:shadow-xl transition-all duration-300 font-medium;
   @apply focus:ring-2 focus:ring-purple-500 focus:ring-offset-2;
 }
 
 .btn-gradient-secondary {
-  @apply bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700;
+  @apply bg-linear-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700;
   @apply text-white shadow-lg hover:shadow-xl transition-all duration-300 font-medium;
   @apply focus:ring-2 focus:ring-pink-500 focus:ring-offset-2;
 }
 
 .btn-hero {
   @apply text-lg px-8 py-4 rounded-xl font-semibold;
-  @apply bg-gradient-to-r from-purple-600 to-blue-600 text-white;
+  @apply bg-linear-to-r from-purple-600 to-blue-600 text-white;
   @apply shadow-lg hover:shadow-xl transition-all duration-300;
   @apply hover:scale-105 active:scale-95;
 }
 
 .btn-premium {
   @apply relative overflow-hidden;
-  @apply bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600;
+  @apply bg-linear-to-r from-purple-600 via-pink-600 to-blue-600;
   @apply text-white font-semibold shadow-xl;
-  @apply before:absolute before:inset-0 before:bg-gradient-to-r before:from-purple-700 before:via-pink-700 before:to-blue-700;
+  @apply before:absolute before:inset-0 before:bg-linear-to-r before:from-purple-700 before:via-pink-700 before:to-blue-700;
   @apply before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-300;
 }
 

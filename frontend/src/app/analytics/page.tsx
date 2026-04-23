@@ -85,7 +85,7 @@ function StatCard({ title, value, subtitle, icon: Icon, gradient, delay }: StatC
               )}
             </div>
             <div
-              className={`p-3 rounded-xl bg-gradient-to-br ${gradient} shadow-lg flex-shrink-0`}
+              className={`p-3 rounded-xl bg-linear-to-br ${gradient} shadow-lg flex-shrink-0`}
             >
               <Icon className="w-5 h-5 text-white" />
             </div>
@@ -133,7 +133,7 @@ export default function AnalyticsPage() {
     : [];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 dark:from-slate-950 dark:via-blue-950 dark:to-purple-950">
+    <div className="min-h-screen bg-linear-to-br from-slate-50 via-blue-50 to-purple-50 dark:from-slate-950 dark:via-blue-950 dark:to-purple-950">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <motion.div
@@ -141,7 +141,7 @@ export default function AnalyticsPage() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent flex items-center gap-3">
+          <h1 className="text-3xl font-bold bg-linear-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent flex items-center gap-3">
             <BarChart3 className="w-8 h-8 text-purple-600" />
             Analytics Dashboard
           </h1>
@@ -300,7 +300,7 @@ export default function AnalyticsPage() {
                         paddingAngle={4}
                         dataKey="value"
                         label={({ name, percent }) =>
-                          `${name} ${(percent * 100).toFixed(0)}%`
+                          `${name} ${((percent ?? 0) * 100).toFixed(0)}%`
                         }
                       >
                         {modeData.map((_, i) => (
@@ -454,7 +454,7 @@ export default function AnalyticsPage() {
                               initial={{ width: 0 }}
                               animate={{ width: `${widthPct}%` }}
                               transition={{ delay: 0.9 + idx * 0.05, duration: 0.5 }}
-                              className="h-full bg-gradient-to-r from-purple-500 to-blue-500 rounded-full"
+                              className="h-full bg-linear-to-r from-purple-500 to-blue-500 rounded-full"
                             />
                           </div>
                         </div>

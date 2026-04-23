@@ -47,7 +47,7 @@ export default function PluginsPage() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent flex items-center gap-3">
+          <h1 className="text-3xl font-bold bg-linear-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent flex items-center gap-3">
             <Puzzle className="w-8 h-8 text-purple-600" />
             Plugin Marketplace
           </h1>
@@ -134,7 +134,7 @@ export default function PluginsPage() {
                             size="sm"
                             onClick={() => installPlugin.mutate({ pluginId: plugin.id })}
                             disabled={installPlugin.isPending}
-                            className="bg-gradient-to-r from-purple-600 to-blue-600 text-white"
+                            className="bg-linear-to-r from-purple-600 to-blue-600 text-white"
                           >
                             <Download className="w-3.5 h-3.5 mr-1" /> Install
                           </Button>

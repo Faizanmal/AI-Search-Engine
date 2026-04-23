@@ -8,7 +8,6 @@ Configurable per-endpoint limits via environment variables.
 import time
 import hashlib
 import logging
-from typing import Optional
 
 from django.conf import settings
 from django.core.cache import cache
