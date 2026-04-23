@@ -12,9 +12,9 @@ from django.contrib.auth.models import User
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from rest_framework import status
-from rest_framework.test import APIClient, APITestCase
+from rest_framework.test import APITestCase
 
-from api.models import Bookmark, SearchQuery, UserPreference
+from api.models import Bookmark, SearchQuery
 from api.utils.sanitizer import (
     detect_injection_attempt,
     sanitize_query,
