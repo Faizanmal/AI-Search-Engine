@@ -4,7 +4,7 @@ Extracts and validates citations from sources and generated content
 """
 
 import re
-from typing import List, Dict, Set
+from typing import List, Dict
 from urllib.parse import urlparse
 
 
@@ -142,7 +142,7 @@ class CitationExtractor:
             if domain.startswith('www.'):
                 domain = domain[4:]
             return domain
-        except:
+        except (ValueError, TypeError):
             return 'unknown'
     
     def validate_sources(self, sources: List[Dict]) -> List[Dict]:
@@ -180,7 +180,7 @@ class CitationExtractor:
         try:
             result = urlparse(url)
             return all([result.scheme, result.netloc])
-        except:
+        except (ValueError, TypeError):
             return False
     
     def format_for_frontend(

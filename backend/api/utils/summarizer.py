@@ -4,7 +4,6 @@ Generates concise summaries and synthesizes information from multiple sources
 
 import os
 from typing import List, Dict, Optional
-from openai import OpenAI
 
 
 class AnswerSummarizer:

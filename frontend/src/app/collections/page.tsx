@@ -87,7 +87,7 @@ export default function CollectionsPage() {
           className="flex items-center justify-between mb-8"
         >
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent flex items-center gap-3">
+            <h1 className="text-3xl font-bold bg-linear-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent flex items-center gap-3">
               <FolderOpen className="w-8 h-8 text-purple-600" />
               Collections
             </h1>
@@ -98,7 +98,7 @@ export default function CollectionsPage() {
 
           <Dialog open={createOpen} onOpenChange={setCreateOpen}>
             <DialogTrigger asChild>
-              <Button variant="default" className="bg-gradient-to-r from-purple-600 to-blue-600 text-white">
+              <Button variant="default" className="bg-linear-to-r from-purple-600 to-blue-600 text-white">
                 <Plus className="w-4 h-4 mr-2" /> New Collection
               </Button>
             </DialogTrigger>

@@ -145,7 +145,7 @@ export default function TrendsPage() {
   const modes = aggregateModes(snapshots ?? []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50/30 to-blue-50/30 dark:from-gray-950 dark:via-purple-950/10 dark:to-blue-950/10">
+    <div className="min-h-screen bg-linear-to-br from-slate-50 via-purple-50/30 to-blue-50/30 dark:from-gray-950 dark:via-purple-950/10 dark:to-blue-950/10">
       <div className="container mx-auto px-4 py-8 max-w-7xl space-y-8">
         {/* Header */}
         <motion.div
@@ -154,7 +154,7 @@ export default function TrendsPage() {
           className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
         >
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent flex items-center gap-2">
+            <h1 className="text-3xl font-bold bg-linear-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent flex items-center gap-2">
               <TrendingUp className="w-8 h-8 text-purple-600" />
               Search Trends
             </h1>
@@ -172,7 +172,7 @@ export default function TrendsPage() {
                 onClick={() => setDays(p)}
                 className={
                   days === p
-                    ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white'
+                    ? 'bg-linear-to-r from-purple-600 to-blue-600 text-white'
                     : ''
                 }
               >
@@ -320,7 +320,7 @@ export default function TrendsPage() {
                               dataKey="value"
                               nameKey="name"
                               label={({ name, percent }) =>
-                                `${name} (${(percent * 100).toFixed(0)}%)`
+                                `${name} (${((percent ?? 0) * 100).toFixed(0)}%)`
                               }
                             >
                               {modes.map((_, i) => (
@@ -366,7 +366,7 @@ export default function TrendsPage() {
                             variant={i < 5 ? 'default' : 'outline'}
                             className={
                               i < 5
-                                ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white'
+                                ? 'bg-linear-to-r from-purple-600 to-blue-600 text-white'
                                 : ''
                             }
                           >
