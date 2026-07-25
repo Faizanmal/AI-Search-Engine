@@ -56,20 +56,26 @@ A powerful AI-powered search engine that retrieves, analyzes, and synthesizes in
 
 ## ✨ Features
 
-### Core Functionality
-- 🔍 **Intelligent Web Search** - Retrieves relevant information from multiple sources
-- 📚 **Citation Management** - Inline citations with source URLs and snippets
-- 🎯 **Trust Scoring** - Confidence metrics based on source quality and consistency
-- 💬 **Conversational UI** - Chat-style interface for natural interaction
-- 🔄 **Follow-up Questions** - AI-generated related questions to explore topics deeper
-- ⚡ **Real-time Processing** - Async API calls with loading states
+### AI Search
+- Intelligent web search with citations, trust scores, and follow-ups
+- History, bookmarks, collections, alerts, analytics, and trends
+- Plugin marketplace and developer API keys
+- Fact-check assist and export tools
 
-### Advanced Features
-- 📊 **Multi-Agent Workflow** - Separate agents for retrieval, summarization, and verification
-- 💾 **Vector Storage** - Pinecone integration for semantic search history
-- 🎨 **Modern UI** - Beautiful, responsive design with Tailwind CSS
-- 🌙 **Dark Mode** - Full dark mode support
-- 📱 **Mobile Responsive** - Works seamlessly on all devices
+### FormForge
+- AI-assisted form generation from a natural-language prompt
+- Drag-friendly editor with field types (including **file upload** and **payment**)
+- Conditional logic (show/hide fields)
+- Public hosted forms + embed code
+- Submission analytics
+- Integrations that fire on submit:
+  - Webhook (HMAC-signed)
+  - Email notifications
+  - Google Sheets (OAuth + spreadsheet ID)
+  - Stripe Checkout (per payment field)
+  - Slack Incoming Webhooks
+  - Notion database pages
+  - Zapier Catch Hooks
 
 ---
 
@@ -199,14 +205,19 @@ Refer to the sub‑README files for more details on individual workflows.
 
 ### Testing the Application
 
-1. Open browser to `http://localhost:3000/search`
+**Search**
+1. Open `http://localhost:3000/search`
 2. Enter a query like "What is quantum computing?"
-3. Wait for the AI to:
-   - Search the web
-   - Analyze sources
-   - Generate answer with citations
-   - Provide trust score
-   - Suggest follow-up questions
+
+**FormForge**
+1. Seed catalog data: `cd backend && python manage.py seed_catalog`
+2. Open `http://localhost:3000/dashboard` (create/login first)
+3. Create a form from prompt or template → edit → publish → open `/form/<slug>`
+4. Configure integrations under `/forms/<id>/integrations`
+
+**API Keys & Plugins**
+- `/api-keys` — create/revoke developer keys
+- `/plugins` — marketplace (after `seed_catalog`)
 
 ---
 

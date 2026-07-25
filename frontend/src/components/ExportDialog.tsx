@@ -97,7 +97,7 @@ function ExportDialogInner({ open, onOpenChange }: ExportDialogProps) {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Download className="w-5 h-5 text-purple-600" />
+            <Download className="w-5 h-5 text-[var(--ocean)]" />
             Export Search History
           </DialogTitle>
           <DialogDescription>
@@ -153,7 +153,7 @@ function ExportDialogInner({ open, onOpenChange }: ExportDialogProps) {
           <Button
             onClick={handleExport}
             disabled={exportData.isPending}
-            className="bg-purple-600 hover:bg-purple-700 text-white"
+            className="bg-[var(--signal)] hover:bg-[var(--signal-deep)] text-white"
           >
             {exportData.isPending ? (
               <>

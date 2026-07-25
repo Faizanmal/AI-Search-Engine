@@ -1,6 +1,5 @@
 /**
  * SettingsDialog — user preferences dialog.
- * Premium Redesign with animations, glassmorphism, and dynamic feedback.
  */
 
 'use client';
@@ -19,10 +18,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { 
-  Settings, Loader2, Save, RotateCcw, X, 
-  Mic, Search, BookOpen, ShieldCheck, 
-  BellRing, Layers, Hash 
+import {
+  Settings, Loader2, Save, RotateCcw, X,
+  Mic, Search, BookOpen, ShieldCheck,
+  BellRing, Layers, Hash,
 } from 'lucide-react';
 import {
   Select,
@@ -114,35 +113,29 @@ function SettingsDialogInner({ open, onOpenChange }: SettingsDialogProps) {
     setIsDirty(true);
   }, []);
 
-  // Animation variants
   const containerVars = {
     hidden: { opacity: 0 },
-    show: { opacity: 1, transition: { staggerChildren: 0.05 } }
+    show: { opacity: 1, transition: { staggerChildren: 0.05 } },
   };
   const itemVars: Variants = {
     hidden: { opacity: 0, y: 10 },
     show: {
       opacity: 1,
       y: 0,
-      transition: { type: "spring" as const, stiffness: 300, damping: 24 }
-    }
+      transition: { type: 'spring' as const, stiffness: 300, damping: 24 },
+    },
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-xl p-0 overflow-hidden border-0 bg-transparent shadow-2xl">
-        <div className="relative w-full h-full bg-background/95 backdrop-blur-3xl border border-white/20 dark:border-white/10 sm:rounded-2xl overflow-hidden flex flex-col max-h-[90vh]">
-          {/* Decorative background glow */}
-          <div className="absolute top-0 inset-x-0 h-40 bg-linear-to-br from-purple-500/20 via-blue-500/20 to-transparent blur-3xl -z-10 pointer-events-none" />
-          
-          <DialogHeader className="px-6 py-5 border-b border-border/50 sticky top-0 bg-background/80 backdrop-blur-md z-10">
-            <DialogTitle className="flex items-center gap-3 text-2xl">
-              <div className="p-2 rounded-xl bg-linear-to-br from-purple-500 to-blue-600 text-white shadow-lg shadow-purple-500/30">
+      <DialogContent className="sm:max-w-xl p-0 overflow-hidden border-[var(--surface-border)] bg-[var(--paper)] shadow-[var(--shadow-lg)] sm:rounded-xl">
+        <div className="relative w-full h-full flex flex-col max-h-[90vh]">
+          <DialogHeader className="px-6 py-5 border-b border-[var(--surface-border)] sticky top-0 bg-[var(--paper)] z-10">
+            <DialogTitle className="flex items-center gap-3 font-display text-2xl text-[var(--ink)]">
+              <div className="p-2 rounded-lg bg-[var(--ocean-deep)] text-white shadow-[var(--shadow-sm)]">
                 <Settings className="w-5 h-5" />
               </div>
-              <span className="bg-clip-text text-transparent bg-linear-to-r from-foreground to-foreground/70 font-bold">
-                Search Preferences
-              </span>
+              Search Preferences
             </DialogTitle>
             <DialogDescription className="text-muted-foreground pt-1">
               Personalize your AI search engine capabilities and interface.
@@ -152,51 +145,54 @@ function SettingsDialogInner({ open, onOpenChange }: SettingsDialogProps) {
           <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
             {isLoading ? (
               <div className="flex items-center justify-center py-20">
-                <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
+                <Loader2 className="w-8 h-8 animate-spin text-[var(--ocean)]" />
               </div>
             ) : (
-              <motion.div 
-                variants={containerVars} 
-                initial="hidden" 
-                animate="show" 
+              <motion.div
+                variants={containerVars}
+                initial="hidden"
+                animate="show"
                 className="space-y-8"
               >
-                {/* Section: Output Limits */}
                 <motion.div variants={itemVars} className="space-y-6">
-                  <div className="space-y-4 bg-muted/30 p-5 rounded-2xl border border-border/50 transition-all hover:bg-muted/40">
+                  <div className="space-y-4 bg-muted/30 p-5 rounded-xl border border-[var(--surface-border)] transition-all hover:bg-muted/40">
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <Label className="text-base font-semibold flex items-center gap-2">
-                          <Layers className="w-4 h-4 text-purple-500" /> Maximum Sources
+                          <Layers className="w-4 h-4 text-[var(--ocean)]" /> Maximum Sources
                         </Label>
-                        <span className="px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 text-sm font-bold">
+                        <span className="px-2.5 py-0.5 rounded-lg bg-[var(--sea-light)] text-[var(--ocean-deep)] text-sm font-bold">
                           {localPrefs.default_max_sources}
                         </span>
                       </div>
                       <Slider
                         value={[localPrefs.default_max_sources]}
                         onValueChange={([v]) => updateLocal('default_max_sources', v)}
-                        min={1} max={15} step={1}
+                        min={1}
+                        max={15}
+                        step={1}
                         className="py-2"
                       />
                       <p className="text-xs text-muted-foreground">Number of web sources to include per search (1–15)</p>
                     </div>
                   </div>
 
-                  <div className="space-y-4 bg-muted/30 p-5 rounded-2xl border border-border/50 transition-all hover:bg-muted/40">
+                  <div className="space-y-4 bg-muted/30 p-5 rounded-xl border border-[var(--surface-border)] transition-all hover:bg-muted/40">
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <Label className="text-base font-semibold flex items-center gap-2">
-                          <ShieldCheck className="w-4 h-4 text-green-500" /> Minimum Trust Score
+                          <ShieldCheck className="w-4 h-4 text-emerald-600" /> Minimum Trust Score
                         </Label>
-                        <span className="px-2.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 text-sm font-bold">
+                        <span className="px-2.5 py-0.5 rounded-lg bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300 text-sm font-bold">
                           {localPrefs.min_trust_score}%
                         </span>
                       </div>
                       <Slider
                         value={[localPrefs.min_trust_score]}
                         onValueChange={([v]) => updateLocal('min_trust_score', v)}
-                        min={0} max={100} step={5}
+                        min={0}
+                        max={100}
+                        step={5}
                         className="py-2"
                       />
                       <p className="text-xs text-muted-foreground">Only show results above this trust threshold</p>
@@ -204,17 +200,16 @@ function SettingsDialogInner({ open, onOpenChange }: SettingsDialogProps) {
                   </div>
                 </motion.div>
 
-                {/* Section: Features */}
                 <motion.div variants={itemVars} className="grid sm:grid-cols-2 gap-4">
                   {[
-                    { id: 'enable_voice_search', label: 'Voice Search', desc: 'Enable microphone input', icon: Mic, color: 'text-blue-500' },
-                    { id: 'enable_auto_followups', label: 'Auto Follow-ups', desc: 'Show suggested questions', icon: Search, color: 'text-purple-500' },
-                    { id: 'enable_fact_checking', label: 'Fact Checking', desc: 'Auto-verify search claims', icon: ShieldCheck, color: 'text-emerald-500' },
-                    { id: 'enable_topic_alerts', label: 'Topic Alerts', desc: 'Get updates on your interests', icon: BellRing, color: 'text-amber-500' },
+                    { id: 'enable_voice_search', label: 'Voice Search', desc: 'Enable microphone input', icon: Mic, color: 'text-[var(--ocean)]' },
+                    { id: 'enable_auto_followups', label: 'Auto Follow-ups', desc: 'Show suggested questions', icon: Search, color: 'text-[var(--ocean-deep)]' },
+                    { id: 'enable_fact_checking', label: 'Fact Checking', desc: 'Auto-verify search claims', icon: ShieldCheck, color: 'text-emerald-600' },
+                    { id: 'enable_topic_alerts', label: 'Topic Alerts', desc: 'Get updates on your interests', icon: BellRing, color: 'text-amber-600' },
                   ].map((feature) => (
-                    <label 
-                      key={feature.id} 
-                      className="flex items-start justify-between gap-4 p-4 rounded-2xl border border-border/50 bg-muted/20 hover:bg-muted/40 cursor-pointer transition-colors"
+                    <label
+                      key={feature.id}
+                      className="flex items-start justify-between gap-4 p-4 rounded-xl border border-[var(--surface-border)] bg-muted/20 hover:bg-muted/40 cursor-pointer transition-colors"
                     >
                       <div className="flex gap-3">
                         <feature.icon className={`w-5 h-5 mt-0.5 ${feature.color}`} />
@@ -231,7 +226,6 @@ function SettingsDialogInner({ open, onOpenChange }: SettingsDialogProps) {
                   ))}
                 </motion.div>
 
-                {/* Section: Modes & Sources */}
                 <motion.div variants={itemVars} className="space-y-6">
                   <div className="space-y-3">
                     <Label className="text-base font-semibold">Default Search Mode</Label>
@@ -239,14 +233,14 @@ function SettingsDialogInner({ open, onOpenChange }: SettingsDialogProps) {
                       value={localPrefs.default_search_mode}
                       onValueChange={(v) => updateLocal('default_search_mode', v as UserPreferences['default_search_mode'])}
                     >
-                      <SelectTrigger className="w-full h-12 bg-background/50 rounded-xl border-border/50">
+                      <SelectTrigger className="w-full h-12 bg-background/50 rounded-xl border-[var(--surface-border)]">
                         <SelectValue placeholder="Select search mode" />
                       </SelectTrigger>
                       <SelectContent className="rounded-xl overflow-hidden">
                         {SEARCH_MODES.map((mode) => (
                           <SelectItem key={mode.value} value={mode.value} className="cursor-pointer">
                             <div className="flex items-center gap-2">
-                              <mode.icon className="w-4 h-4 text-purple-500" />
+                              <mode.icon className="w-4 h-4 text-[var(--ocean)]" />
                               <span className="font-medium">{mode.label}</span>
                             </div>
                           </SelectItem>
@@ -264,10 +258,10 @@ function SettingsDialogInner({ open, onOpenChange }: SettingsDialogProps) {
                           <button
                             key={type}
                             type="button"
-                            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-300 capitalize border ${
+                            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 capitalize border ${
                               isSelected
-                                ? 'bg-linear-to-r from-purple-600 to-blue-600 text-white border-transparent shadow-md shadow-purple-500/25 scale-105'
-                                : 'bg-background hover:bg-muted border-border/60 text-foreground'
+                                ? 'bg-[var(--ocean-deep)] text-white border-transparent shadow-[var(--shadow-sm)]'
+                                : 'bg-background hover:bg-muted border-[var(--surface-border)] text-foreground'
                             }`}
                             onClick={() => toggleSourceType(type)}
                           >
@@ -278,8 +272,8 @@ function SettingsDialogInner({ open, onOpenChange }: SettingsDialogProps) {
                     </div>
                   </div>
 
-                  <div className="space-y-3 p-5 rounded-2xl bg-linear-to-br from-purple-500/5 to-blue-500/5 border border-purple-500/10">
-                    <Label className="text-base font-semibold text-purple-700 dark:text-purple-300">Your Interests</Label>
+                  <div className="space-y-3 p-5 rounded-xl bg-[var(--sea-light)]/30 border border-[var(--surface-border)]">
+                    <Label className="text-base font-semibold text-[var(--ocean-deep)]">Your Interests</Label>
                     <div className="flex flex-wrap gap-2">
                       <AnimatePresence>
                         {(localPrefs.interests ?? []).map((interest) => (
@@ -291,7 +285,7 @@ function SettingsDialogInner({ open, onOpenChange }: SettingsDialogProps) {
                           >
                             <Badge
                               variant="default"
-                              className="bg-purple-100 hover:bg-purple-200 text-purple-700 dark:bg-purple-900/60 dark:hover:bg-purple-800/60 dark:text-purple-200 cursor-pointer capitalize gap-1 py-1 px-3 border border-purple-200 dark:border-purple-800"
+                              className="bg-[var(--sea-light)] hover:bg-[var(--sea-light)]/80 text-[var(--ocean-deep)] cursor-pointer capitalize gap-1 py-1 px-3 border border-[var(--surface-border)] rounded-lg"
                               onClick={() => updateLocal('interests', localPrefs.interests.filter((i) => i !== interest))}
                             >
                               {interest}
@@ -304,7 +298,7 @@ function SettingsDialogInner({ open, onOpenChange }: SettingsDialogProps) {
                     <div className="relative group">
                       <Input
                         placeholder="Type a topic and press Enter..."
-                        className="h-11 bg-background/80 border-border/50 focus:ring-purple-500/50 rounded-xl"
+                        className="h-11 bg-background/80 border-[var(--surface-border)] focus-visible:ring-[var(--ocean)]/40 rounded-xl"
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') {
                             e.preventDefault();
@@ -326,22 +320,22 @@ function SettingsDialogInner({ open, onOpenChange }: SettingsDialogProps) {
             )}
           </div>
 
-          <div className="p-6 border-t border-border/50 bg-background/80 backdrop-blur-md sticky bottom-0 z-10">
+          <div className="p-6 border-t border-[var(--surface-border)] bg-[var(--paper)] sticky bottom-0 z-10">
             <div className="flex flex-col-reverse sm:flex-row sm:justify-between w-full gap-3 sm:gap-0">
-              <Button 
-                variant="ghost" 
-                onClick={handleReset} 
-                disabled={updatePrefs.isPending} 
+              <Button
+                variant="ghost"
+                onClick={handleReset}
+                disabled={updatePrefs.isPending}
                 className="w-full sm:w-auto h-11 text-muted-foreground hover:text-foreground"
               >
                 <RotateCcw className="w-4 h-4 mr-2" />
                 Reset Defaults
               </Button>
               <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                <Button 
-                  variant="outline" 
-                  onClick={() => onOpenChange(false)} 
-                  disabled={updatePrefs.isPending} 
+                <Button
+                  variant="outline"
+                  onClick={() => onOpenChange(false)}
+                  disabled={updatePrefs.isPending}
                   className="w-full sm:w-auto h-11 rounded-xl"
                 >
                   Cancel
@@ -349,7 +343,7 @@ function SettingsDialogInner({ open, onOpenChange }: SettingsDialogProps) {
                 <Button
                   onClick={handleSave}
                   disabled={!isDirty || updatePrefs.isPending}
-                  className="w-full sm:w-auto h-11 px-8 rounded-xl bg-linear-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg shadow-purple-500/25 transition-all font-semibold"
+                  className="w-full sm:w-auto h-11 px-8 rounded-xl bg-[var(--signal)] hover:bg-[var(--signal-deep)] text-white shadow-[var(--shadow-sm)] transition-all font-semibold"
                 >
                   {updatePrefs.isPending ? (
                     <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...</>

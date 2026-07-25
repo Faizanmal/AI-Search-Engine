@@ -103,7 +103,7 @@ export function ShimmerButton({
   'onDrag' | 'onDragEnd' | 'onDragEnter' | 'onDragLeave' | 'onDragOver' | 'onDragStart' | 'onDrop' | 'onAnimationStart'>) {
   return (
     <motion.button
-      className={`relative overflow-hidden bg-linear-to-r from-purple-600 to-blue-600 text-white px-6 py-3 rounded-lg font-medium shadow-lg hover:shadow-xl transition-shadow ${className}`}
+      className={`relative overflow-hidden bg-[var(--ocean-deep)] text-white px-6 py-3 rounded-lg font-medium shadow-[var(--shadow-md)] hover:bg-[var(--ocean)] transition-colors ${className}`}
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
       {...props}

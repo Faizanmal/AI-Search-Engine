@@ -24,7 +24,7 @@ export function LoadingSpinner({ size = 'md', text, fullScreen = false }: Loadin
         animate={{ rotate: 360 }}
         transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
       >
-        <Loader2 className={`${sizeClasses[size]} text-purple-600`} />
+        <Loader2 className={`${sizeClasses[size]} text-[var(--ocean)]`} />
       </motion.div>
       {text && (
         <motion.p
@@ -56,7 +56,7 @@ export function PulsingDots() {
       {[0, 1, 2].map((i) => (
         <motion.div
           key={i}
-          className="w-2 h-2 bg-purple-600 rounded-full"
+          className="w-2 h-2 bg-[var(--ocean)] rounded-full"
           animate={{
             scale: [1, 1.5, 1],
             opacity: [1, 0.5, 1],

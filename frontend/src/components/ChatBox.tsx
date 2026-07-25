@@ -25,6 +25,7 @@ import React, {
   KeyboardEvent,
   memo,
 } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Message, Source, SearchMode } from '@/types/search';
 import { MessageBubble } from './MessageBubble';
@@ -47,8 +48,11 @@ import {
   Newspaper,
   Code2,
   ShieldCheck,
+  Search,
 } from 'lucide-react';
 import { searchAPI, RateLimitError } from '@/lib/search-api';
+import { usePreferences } from '@/hooks/use-search';
+import { useQueryClient } from '@tanstack/react-query';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { FadeIn } from '@/components/animations';
@@ -78,26 +82,98 @@ interface ChatBoxProps {
 // Suggested Queries
 // ---------------------------------------------------------------------------
 const SUGGESTED_QUERIES = [
-  { text: 'What is quantum computing?', icon: Sparkles, gradient: 'from-purple-500 to-pink-500' },
-  { text: 'Explain climate change causes', icon: Zap, gradient: 'from-blue-500 to-cyan-500' },
-  { text: 'How does machine learning work?', icon: Sparkles, gradient: 'from-green-500 to-emerald-500' },
-  { text: 'Latest developments in AI', icon: Zap, gradient: 'from-orange-500 to-red-500' },
+  { text: 'What is quantum computing?', icon: Sparkles, accent: 'bg-[var(--ocean)]' },
+  { text: 'Explain climate change causes', icon: Zap, accent: 'bg-[var(--ocean-deep)]' },
+  { text: 'How does machine learning work?', icon: Sparkles, accent: 'bg-[var(--signal)]' },
+  { text: 'Latest developments in AI', icon: Zap, accent: 'bg-[var(--ink)]' },
 ] as const;
+
+const DEGRADED_LABELS: Record<string, string> = {
+  missing_tavily_key: 'Web search is offline (missing Tavily key).',
+  tavily_error: 'Web search failed — results may be incomplete.',
+  no_results: 'No web sources found for this query.',
+  missing_llm: 'Answer model is offline (missing API key).',
+  llm_error: 'Answer generation hit an error.',
+};
 
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 function ChatBoxInner({}: ChatBoxProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const queryClient = useQueryClient();
+  const { data: preferences } = usePreferences();
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [retryAfter, setRetryAfter] = useState<number | null>(null);
+  const [lastFailedQuery, setLastFailedQuery] = useState<string | null>(null);
   const [searchMode, setSearchMode] = useState<SearchMode>('text');
   const [enableFactCheck, setEnableFactCheck] = useState(false);
+  const [prefsApplied, setPrefsApplied] = useState(false);
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const retryTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const historyLoadedRef = useRef<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  const [streamStatus, setStreamStatus] = useState<string | null>(null);
+
+  // Apply saved preferences once
+  useEffect(() => {
+    if (!preferences || prefsApplied) return;
+    setSearchMode(preferences.default_search_mode || 'text');
+    setEnableFactCheck(Boolean(preferences.enable_fact_checking));
+    setVoiceEnabled(preferences.enable_voice_search !== false);
+    setPrefsApplied(true);
+  }, [preferences, prefsApplied]);
+
+  // Restore a history entry from ?history=<id>
+  useEffect(() => {
+    const historyId = searchParams.get('history');
+    if (!historyId || historyLoadedRef.current === historyId) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const entry = await searchAPI.getHistoryEntry(historyId);
+        if (cancelled) return;
+        historyLoadedRef.current = historyId;
+        const userMessage: Message = {
+          id: crypto.randomUUID(),
+          type: 'user',
+          content: entry.query,
+          timestamp: new Date(entry.created_at),
+        };
+        const assistantMessage: Message = {
+          id: crypto.randomUUID(),
+          type: 'assistant',
+          content: entry.answer,
+          sources: entry.sources,
+          trust_score: entry.trust_score,
+          followups: entry.followups,
+          timestamp: new Date(entry.created_at),
+          query_id: entry.id,
+          response_time_ms: entry.response_time_ms,
+          search_mode: entry.search_mode,
+          tags: entry.tags,
+          fact_check_result: entry.fact_check_result,
+        };
+        setMessages([userMessage, assistantMessage]);
+        if (entry.search_mode) setSearchMode(entry.search_mode);
+        toast.success('Loaded from history');
+      } catch {
+        toast.error('Could not load that search from history');
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [searchParams]);
 
   // ---- Auto-scroll ----------------------------------------------------------
   useEffect(() => {
@@ -131,51 +207,267 @@ function ChatBoxInner({}: ChatBoxProps) {
       const trimmed = queryText.trim();
       if (!trimmed || isLoading) return;
 
+      const conversationHistory = messages
+        .filter((m) => m.content?.trim())
+        .slice(-6)
+        .map((m) => ({
+          role: (m.type === 'user' ? 'user' : 'assistant') as 'user' | 'assistant',
+          content: m.content.slice(0, 2000),
+        }));
+
       const userMessage: Message = {
         id: crypto.randomUUID(),
         type: 'user',
         content: trimmed,
         timestamp: new Date(),
       };
+      const assistantId = crypto.randomUUID();
 
-      setMessages((prev) => [...prev, userMessage]);
+      setMessages((prev) => [
+        ...prev,
+        userMessage,
+        {
+          id: assistantId,
+          type: 'assistant',
+          content: '',
+          sources: [],
+          followups: [],
+          timestamp: new Date(),
+          isRegenerating: true,
+        },
+      ]);
       setInputValue('');
       setIsLoading(true);
       setError(null);
       setRetryAfter(null);
+      setLastFailedQuery(null);
+      setStreamStatus('Searching the web…');
+
+      if (searchParams.get('history')) {
+        router.replace('/search', { scroll: false });
+      }
+
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
+
+      const autoFollowups = preferences?.enable_auto_followups !== false;
+      let usedStreaming = false;
+      let finalized = false;
+
+      const finalizeAssistant = (patch: Partial<Message>) => {
+        finalized = true;
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantId
+              ? { ...m, ...patch, isRegenerating: false }
+              : m,
+          ),
+        );
+      };
 
       try {
-        const response = await searchAPI.query(trimmed, searchMode, enableFactCheck);
+        // Prefer streaming; fall back to blocking query (e.g. fact-check path)
+        if (enableFactCheck) {
+          const response = await searchAPI.query(trimmed, searchMode, true, {
+            maxSources: preferences?.default_max_sources,
+            sourceTypes: preferences?.preferred_source_types,
+            conversationHistory,
+          });
+          let followups = response.followups;
+          if (autoFollowups && (!followups || followups.length === 0)) {
+            try {
+              const similar = await searchAPI.getSimilarQueries(trimmed, 3);
+              followups = similar.map((item) => item.query).filter(Boolean);
+            } catch {
+              /* noop */
+            }
+          }
+          if (!autoFollowups) followups = [];
+          if (response.cached) {
+            toast.message('Answer served from cache');
+          }
+          if (response.degraded) {
+            toast.warning(
+              DEGRADED_LABELS[response.degraded_reason || ''] ||
+                'Search ran in degraded mode.',
+            );
+          }
+          finalizeAssistant({
+            content: response.answer,
+            sources: response.sources,
+            trust_score: response.trust_score,
+            followups,
+            query_id: response.query_id,
+            response_time_ms: response.response_time_ms,
+            search_mode: response.search_mode,
+            tags: response.tags,
+            fact_check_result: response.fact_check_result,
+            degraded: response.degraded,
+            degraded_reason: response.degraded_reason,
+          });
+        } else {
+          usedStreaming = true;
+          let latestSources: Message['sources'] = [];
+          await searchAPI.streamQuery(
+            trimmed,
+            {
+              onStatus: (status) => {
+                if (status === 'searching') setStreamStatus('Searching the web…');
+                else if (status === 'generating') setStreamStatus('Writing answer…');
+                else setStreamStatus(status);
+              },
+              onSources: (sources) => {
+                latestSources = sources;
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === assistantId ? { ...m, sources } : m,
+                  ),
+                );
+                setStreamStatus('Writing answer…');
+              },
+              onChunk: (chunk) => {
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === assistantId
+                      ? { ...m, content: (m.content || '') + chunk }
+                      : m,
+                  ),
+                );
+              },
+              onDone: async (meta) => {
+                if (finalized) {
+                  // Second pass (done event) — attach query_id / timing only
+                  setMessages((prev) =>
+                    prev.map((m) =>
+                      m.id === assistantId
+                        ? {
+                            ...m,
+                            query_id: meta.query_id || m.query_id,
+                            response_time_ms:
+                              meta.response_time_ms ?? m.response_time_ms,
+                            tags: meta.tags || m.tags,
+                          }
+                        : m,
+                    ),
+                  );
+                  return;
+                }
+                let followups = meta.followups || [];
+                if (autoFollowups && followups.length === 0) {
+                  try {
+                    const similar = await searchAPI.getSimilarQueries(trimmed, 3);
+                    followups = similar.map((item) => item.query).filter(Boolean);
+                  } catch {
+                    /* noop */
+                  }
+                }
+                if (!autoFollowups) followups = [];
+                if (meta.degraded) {
+                  toast.warning(
+                    DEGRADED_LABELS[meta.degraded_reason || ''] ||
+                      'Search ran in degraded mode.',
+                  );
+                }
+                finalizeAssistant({
+                  content: meta.answer,
+                  sources: meta.sources || latestSources,
+                  trust_score: meta.trust_score,
+                  followups,
+                  query_id: meta.query_id,
+                  response_time_ms: meta.response_time_ms,
+                  search_mode: (meta.search_mode as SearchMode) || searchMode,
+                  tags: meta.tags,
+                  degraded: meta.degraded,
+                  degraded_reason: meta.degraded_reason,
+                });
+              },
+              onError: (message) => {
+                throw new Error(message);
+              },
+            },
+            {
+              searchMode,
+              maxSources: preferences?.default_max_sources,
+              sourceTypes: preferences?.preferred_source_types,
+              enableFollowups: autoFollowups,
+              conversationHistory,
+              signal: controller.signal,
+            },
+          );
 
-        const assistantMessage: Message = {
-          id: crypto.randomUUID(),
-          type: 'assistant',
-          content: response.answer,
-          sources: response.sources,
-          trust_score: response.trust_score,
-          followups: response.followups,
-          timestamp: new Date(),
-          query_id: response.query_id,
-          response_time_ms: response.response_time_ms,
-          isBookmarked: false,
-          search_mode: response.search_mode,
-          tags: response.tags,
-        };
+          // If stream ended without a done/metadata event, keep whatever we have
+          if (!finalized) {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === assistantId ? { ...m, isRegenerating: false } : m,
+              ),
+            );
+          }
+        }
 
-        setMessages((prev) => [...prev, assistantMessage]);
+        queryClient.invalidateQueries({ queryKey: ['history'] });
+        queryClient.invalidateQueries({ queryKey: ['analytics'] });
       } catch (err) {
+        if (err instanceof DOMException && err.name === 'AbortError') {
+          setMessages((prev) => prev.filter((m) => m.id !== assistantId));
+          return;
+        }
+        // Streaming failed — try one-shot query once
+        if (usedStreaming && !(err instanceof RateLimitError)) {
+          try {
+            const response = await searchAPI.query(trimmed, searchMode, false, {
+              maxSources: preferences?.default_max_sources,
+              sourceTypes: preferences?.preferred_source_types,
+              conversationHistory,
+            });
+            finalizeAssistant({
+              content: response.answer,
+              sources: response.sources,
+              trust_score: response.trust_score,
+              followups: autoFollowups ? response.followups : [],
+              query_id: response.query_id,
+              response_time_ms: response.response_time_ms,
+              search_mode: response.search_mode,
+              tags: response.tags,
+              degraded: response.degraded,
+              degraded_reason: response.degraded_reason,
+            });
+            queryClient.invalidateQueries({ queryKey: ['history'] });
+            queryClient.invalidateQueries({ queryKey: ['analytics'] });
+            return;
+          } catch (fallbackErr) {
+            err = fallbackErr;
+          }
+        }
+
+        setMessages((prev) => prev.filter((m) => m.id !== assistantId));
+        setLastFailedQuery(trimmed);
         if (err instanceof RateLimitError) {
           setRetryAfter(err.retryAfter ?? 60);
-          setError(`Rate limit exceeded. Please wait ${err.retryAfter ?? 60}s before trying again.`);
+          setError(
+            `Rate limit exceeded. Please wait ${err.retryAfter ?? 60}s before trying again.`,
+          );
         } else {
           setError(err instanceof Error ? err.message : 'An unexpected error occurred.');
         }
       } finally {
         setIsLoading(false);
+        setStreamStatus(null);
+        abortRef.current = null;
         textareaRef.current?.focus();
       }
     },
-    [isLoading, searchMode, enableFactCheck],
+    [
+      isLoading,
+      searchMode,
+      enableFactCheck,
+      preferences,
+      router,
+      searchParams,
+      queryClient,
+      messages,
+    ],
   );
 
   // ---- Regenerate last response ---------------------------------------------
@@ -305,7 +597,7 @@ function ChatBoxInner({}: ChatBoxProps) {
 
   return (
     <div
-      className="flex flex-col h-full min-h-[calc(100vh-4rem)] bg-linear-to-br from-slate-50 via-blue-50 to-purple-50 dark:from-slate-950 dark:via-blue-950 dark:to-purple-950 overflow-hidden"
+      className="flex flex-col h-full min-h-[calc(100vh-4rem)] app-atmosphere overflow-hidden"
       role="region"
       aria-label="AI Search Chat"
     >
@@ -329,57 +621,51 @@ function ChatBoxInner({}: ChatBoxProps) {
             >
               <FadeIn delay={0.1}>
                 <motion.div
-                  animate={{ y: [0, -10, 0] }}
-                  transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                  animate={{ y: [0, -6, 0] }}
+                  transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
                   className="relative mb-8 md:mb-10"
                 >
-                  <div className="w-20 h-20 md:w-28 md:h-28 bg-linear-to-br from-purple-500 to-blue-500 rounded-3xl flex items-center justify-center shadow-2xl">
-                    <Sparkles className="text-white w-10 h-10 md:w-14 md:h-14" />
+                  <div className="w-16 h-16 md:w-20 md:h-20 bg-[var(--ocean-deep)] rounded-2xl flex items-center justify-center shadow-[var(--shadow-lg)]">
+                    <Search className="text-white w-7 h-7 md:w-9 md:h-9" strokeWidth={2.25} />
                   </div>
-                  <motion.div
-                    animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0, 0.5] }}
-                    transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-                    className="absolute inset-0 bg-linear-to-br from-purple-500 to-blue-500 rounded-3xl -z-10"
-                  />
                 </motion.div>
               </FadeIn>
 
               <FadeIn delay={0.2}>
-                <h1 className="heading-secondary mb-4 md:mb-6 bg-linear-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent max-w-4xl">
-                  AI Search Assistant
+                <h1 className="font-display heading-secondary mb-3 md:mb-4 text-[var(--ink)] max-w-3xl">
+                  What do you want to know?
                 </h1>
               </FadeIn>
 
               <FadeIn delay={0.3}>
-                <p className="text-muted-foreground text-base md:text-xl max-w-2xl mb-8 md:mb-16 leading-relaxed px-4">
-                  Ask me anything and I&apos;ll search the web to provide you with accurate,
-                  well-researched answers with citations.
+                <p className="text-muted-foreground text-base md:text-lg max-w-xl mb-8 md:mb-12 leading-relaxed px-4">
+                  Ask anything — Atlas searches the web and returns a clear answer with citations.
                 </p>
               </FadeIn>
 
               <FadeIn delay={0.4}>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 lg:gap-6 max-w-4xl w-full px-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-3xl w-full px-4">
                   {SUGGESTED_QUERIES.map((suggestion, index) => (
                     <motion.div
                       key={index}
-                      initial={{ opacity: 0, y: 20 }}
+                      initial={{ opacity: 0, y: 16 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.5 + index * 0.1, duration: 0.5 }}
-                      whileHover={{ scale: 1.03, y: -4 }}
-                      whileTap={{ scale: 0.98 }}
+                      transition={{ delay: 0.45 + index * 0.08, duration: 0.4 }}
+                      whileHover={{ y: -2 }}
+                      whileTap={{ scale: 0.99 }}
                     >
                       <Button
                         variant="outline"
-                        className="h-auto py-4 md:py-5 px-4 md:px-6 text-left justify-start glass border-white/30 hover:shadow-xl transition-all group w-full rounded-xl"
+                        className="h-auto py-4 px-4 text-left justify-start bg-[var(--paper)]/80 border-[var(--surface-border)] hover:border-[var(--ocean)]/30 hover:shadow-[var(--shadow-md)] transition-all group w-full rounded-xl"
                         onClick={() => handleSubmit(suggestion.text)}
                         aria-label={`Search: ${suggestion.text}`}
                       >
                         <div
-                          className={`p-2 md:p-3 rounded-xl bg-linear-to-br ${suggestion.gradient} mr-3 md:mr-4 shadow-lg shrink-0`}
+                          className={`p-2.5 rounded-lg ${suggestion.accent} mr-3 shadow-sm shrink-0`}
                         >
-                          <suggestion.icon className="w-4 h-4 md:w-5 md:h-5 text-white" />
+                          <suggestion.icon className="w-4 h-4 text-white" />
                         </div>
-                        <span className="text-sm md:text-sm font-semibold group-hover:text-purple-600 transition-colors text-left wrap-break-word">
+                        <span className="text-sm font-medium group-hover:text-[var(--ocean-deep)] transition-colors text-left wrap-break-word">
                           {suggestion.text}
                         </span>
                       </Button>
@@ -427,38 +713,28 @@ function ChatBoxInner({}: ChatBoxProps) {
                 ))}
               </AnimatePresence>
 
-              {/* Loading indicator */}
+              {/* Loading indicator (only when waiting before first stream chunk) */}
               <AnimatePresence>
-                {isLoading && (
+                {isLoading && streamStatus && !messages.some((m) => m.type === 'assistant' && m.isRegenerating && m.content) && (
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
                     className="flex gap-5 mb-8"
                   >
-                    <div className="w-12 h-12 rounded-full bg-linear-to-br from-purple-500 to-blue-500 flex items-center justify-center shrink-0 shadow-lg">
-                      <Loader2 className="w-6 h-6 text-white animate-spin" />
+                    <div className="w-11 h-11 rounded-xl bg-[var(--ocean-deep)] flex items-center justify-center shrink-0 shadow-[var(--shadow-md)]">
+                      <Loader2 className="w-5 h-5 text-white animate-spin" />
                     </div>
-                    <Card className="p-8 flex-1 max-w-3xl glass border-white/30 shadow-lg">
+                    <Card className="p-6 flex-1 max-w-3xl bg-[var(--paper)]/90 border-[var(--surface-border)] shadow-[var(--shadow-md)] rounded-xl">
                       <div className="space-y-3" role="status" aria-label="Loading answer">
-                        {['Searching the web…', 'Analyzing sources…', 'Generating answer…'].map(
-                          (text, i) => (
-                            <motion.p
-                              key={i}
-                              initial={{ opacity: 0, x: -10 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              transition={{ delay: i * 0.3, duration: 0.3 }}
-                              className="text-sm text-muted-foreground flex items-center gap-2"
-                            >
-                              <motion.span
-                                animate={{ scale: [1, 1.2, 1] }}
-                                transition={{ duration: 1, repeat: Infinity, delay: i * 0.3 }}
-                                className="w-2 h-2 rounded-full bg-purple-500"
-                              />
-                              {text}
-                            </motion.p>
-                          ),
-                        )}
+                        <motion.p
+                          initial={{ opacity: 0, x: -8 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          className="text-sm text-muted-foreground flex items-center gap-2.5"
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full bg-[var(--ocean)] animate-pulse" />
+                          {streamStatus}
+                        </motion.p>
                       </div>
                     </Card>
                   </motion.div>
@@ -480,13 +756,38 @@ function ChatBoxInner({}: ChatBoxProps) {
           >
             <Alert
               variant="destructive"
-              className="glass border-red-300 dark:border-red-800 shadow-lg max-w-5xl mx-auto"
+              className="bg-[var(--paper)] border-red-200 shadow-[var(--shadow-md)] max-w-5xl mx-auto rounded-xl"
             >
               <AlertCircle className="h-5 w-5" />
-              <AlertDescription className="text-base">
-                {error}
-                {retryAfter !== null && retryAfter > 0 && (
-                  <span className="ml-2 font-mono text-sm">(retry in {retryAfter}s)</span>
+              <AlertDescription className="text-base flex flex-wrap items-center gap-3">
+                <span>
+                  {error}
+                  {retryAfter !== null && retryAfter > 0 && (
+                    <span className="ml-2 font-mono text-sm">(retry in {retryAfter}s)</span>
+                  )}
+                </span>
+                {lastFailedQuery && (retryAfter === null || retryAfter <= 0) && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-8"
+                    onClick={() => {
+                      const q = lastFailedQuery;
+                      setMessages((prev) => {
+                        const last = prev[prev.length - 1];
+                        if (last?.type === 'user' && last.content === q) {
+                          return prev.slice(0, -1);
+                        }
+                        return prev;
+                      });
+                      setError(null);
+                      handleSubmit(q);
+                    }}
+                  >
+                    <RotateCcw className="w-3.5 h-3.5 mr-1" />
+                    Retry
+                  </Button>
                 )}
               </AlertDescription>
             </Alert>
@@ -499,7 +800,7 @@ function ChatBoxInner({}: ChatBoxProps) {
         initial={{ y: 50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.3, duration: 0.5 }}
-        className="border-t glass-strong backdrop-blur-xl safe-padding py-4 md:py-6"
+        className="border-t border-[var(--surface-border)] bg-[var(--paper)]/90 backdrop-blur-md safe-padding py-4 md:py-5"
       >
         <form onSubmit={handleFormSubmit} className="max-w-5xl mx-auto" aria-label="Search form">
           {/* Action bar */}
@@ -532,7 +833,7 @@ function ChatBoxInner({}: ChatBoxProps) {
                           variant="ghost"
                           size="sm"
                           onClick={handleRegenerate}
-                          className="text-xs text-muted-foreground hover:text-purple-600"
+                          className="text-xs text-muted-foreground hover:text-[var(--ocean)]"
                           aria-label="Regenerate last response"
                         >
                           <RotateCcw className="w-3.5 h-3.5 mr-1" />
@@ -569,10 +870,10 @@ function ChatBoxInner({}: ChatBoxProps) {
                 variant={searchMode === mode ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setSearchMode(mode)}
-                className={`text-xs rounded-full ${
+                className={`text-xs rounded-lg ${
                   searchMode === mode
-                    ? 'bg-linear-to-r from-purple-600 to-blue-600 text-white'
-                    : ''
+                    ? 'bg-[var(--ocean-deep)] text-white hover:bg-[var(--ocean)]'
+                    : 'bg-[var(--paper)] border-[var(--surface-border)]'
                 }`}
               >
                 <MIcon className="w-3.5 h-3.5 mr-1" />
@@ -586,10 +887,10 @@ function ChatBoxInner({}: ChatBoxProps) {
                 variant={enableFactCheck ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setEnableFactCheck(!enableFactCheck)}
-                className={`text-xs rounded-full ${
+                className={`text-xs rounded-lg ${
                   enableFactCheck
-                    ? 'bg-linear-to-r from-green-600 to-emerald-600 text-white'
-                    : ''
+                    ? 'bg-emerald-700 text-white hover:bg-emerald-600'
+                    : 'bg-[var(--paper)] border-[var(--surface-border)]'
                 }`}
               >
                 <ShieldCheck className="w-3.5 h-3.5 mr-1" />
@@ -609,15 +910,17 @@ function ChatBoxInner({}: ChatBoxProps) {
                 onKeyDown={handleKeyDown}
                 disabled={isLoading || (retryAfter !== null && retryAfter > 0)}
                 rows={1}
-                className="min-h-[48px] max-h-[160px] resize-none text-base glass border-white/30 focus:border-purple-400 transition-all rounded-xl border-2 pr-12"
+                className="min-h-[48px] max-h-[160px] resize-none text-base bg-[var(--paper)] border-[var(--surface-border)] focus:border-[var(--ocean)] transition-all rounded-xl border pr-12"
                 aria-label="Search query input"
               />
               <div className="absolute right-2 bottom-2">
-                <VoiceSearchButton
-                  onTranscript={handleVoiceTranscript}
-                  onInterimTranscript={handleInterimVoice}
-                  disabled={isLoading}
-                />
+                {voiceEnabled && (
+                  <VoiceSearchButton
+                    onTranscript={handleVoiceTranscript}
+                    onInterimTranscript={handleInterimVoice}
+                    disabled={isLoading}
+                  />
+                )}
               </div>
             </div>
 
@@ -626,7 +929,7 @@ function ChatBoxInner({}: ChatBoxProps) {
                 type="submit"
                 disabled={isLoading || !inputValue.trim() || (retryAfter !== null && retryAfter > 0)}
                 size="lg"
-                className="h-12 md:h-14 px-6 md:px-8 btn-gradient-primary text-base font-semibold rounded-xl"
+                className="h-12 md:h-14 px-6 md:px-7 bg-[var(--signal)] hover:bg-[var(--signal-deep)] text-white text-base font-semibold rounded-xl shadow-[var(--shadow-md)]"
                 aria-label="Send search query"
               >
                 {isLoading ? (

@@ -1,12 +1,19 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { formsApi, submissionsApi } from "@/lib/api-client";
 import type { Form, Submission, Analytics } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { BarChart3, Download, Eye, FileText, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -20,27 +27,27 @@ export default function FormAnalyticsPage() {
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
-
-  const loadData = useCallback(async () => {
-    try {
-      const [formData, analyticsData, submissionsData] = await Promise.all([
-        formsApi.get(formId),
-        formsApi.getAnalytics(formId),
-        submissionsApi.list(formId),
-      ]);
-      setForm(formData);
-      setAnalytics(analyticsData);
-      setSubmissions(submissionsData);
-    } catch {
-      toast.error("Failed to load analytics");
-    } finally {
-      setLoading(false);
-    }
-  }, [formId]);
+  const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
 
   useEffect(() => {
-    loadData();
-  }, [formId, loadData]);
+    const load = async () => {
+      try {
+        const [formData, analyticsData, submissionsData] = await Promise.all([
+          formsApi.get(formId),
+          formsApi.getAnalytics(formId),
+          submissionsApi.list(formId),
+        ]);
+        setForm(formData);
+        setAnalytics(analyticsData);
+        setSubmissions(submissionsData);
+      } catch {
+        toast.error("Failed to load analytics");
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, [formId]);
 
   // Prepare chart data - submissions by day (last 30 days)
   const getSubmissionsByDay = () => {
@@ -82,46 +89,60 @@ export default function FormAnalyticsPage() {
     }).slice(0, 8); // Show top 8 fields
   };
 
-  const exportToCSV = () => {
-    if (!form || submissions.length === 0) return;
-
-    // Get all unique field IDs
-    const fieldIds = form.schema_json.fields.map(f => f.id);
-    const fieldLabels = form.schema_json.fields.reduce((acc, f) => {
-      acc[f.id] = f.label;
-      return acc;
-    }, {} as Record<string, string>);
-
-    // Create CSV header
-    const headers = ['Submission ID', 'Created At', ...fieldIds.map(id => fieldLabels[id])];
-    
-    // Create CSV rows
-    const rows = submissions.map(sub => [
-      sub.id,
-      new Date(sub.created_at).toLocaleString(),
-      ...fieldIds.map(id => {
-        const value = sub.payload_json[id];
-        if (Array.isArray(value)) return value.join('; ');
-        return value || '';
-      })
-    ]);
-
-    // Combine into CSV string
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
-    ].join('\n');
-
-    // Download
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${form.slug}-submissions.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
-
-    toast.success("CSV exported successfully!");
+  const exportToCSV = async () => {
+    if (!form) return;
+    try {
+      const blob = await submissionsApi.exportCsv(formId);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${form.slug || formId}-submissions.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+      toast.success("CSV exported successfully!");
+    } catch {
+      // Fallback to client-side export if API fails
+      if (submissions.length === 0) {
+        toast.error("No submissions to export");
+        return;
+      }
+      const fieldIds = form.schema_json.fields.map((f) => f.id);
+      const fieldLabels = form.schema_json.fields.reduce(
+        (acc, f) => {
+          acc[f.id] = f.label;
+          return acc;
+        },
+        {} as Record<string, string>
+      );
+      const headers = [
+        "Submission ID",
+        "Created At",
+        ...fieldIds.map((id) => fieldLabels[id]),
+      ];
+      const rows = submissions.map((sub) => [
+        sub.id,
+        new Date(sub.created_at).toLocaleString(),
+        ...fieldIds.map((id) => {
+          const value = sub.payload_json[id];
+          if (Array.isArray(value)) return value.join("; ");
+          return value || "";
+        }),
+      ]);
+      const csvContent = [
+        headers.join(","),
+        ...rows.map((row) =>
+          row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")
+        ),
+      ].join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${form.slug}-submissions.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+      toast.success("CSV exported successfully!");
+    }
   };
 
   if (loading) {
@@ -254,7 +275,7 @@ export default function FormAnalyticsPage() {
                 All form responses ({submissions.length} total)
               </CardDescription>
             </div>
-            <Button onClick={exportToCSV} disabled={submissions.length === 0}>
+            <Button onClick={exportToCSV} disabled={!form}>
               <Download className="mr-2 h-4 w-4" />
               Export CSV
             </Button>
@@ -306,10 +327,7 @@ export default function FormAnalyticsPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => {
-                            // Show full submission in modal (to be implemented)
-                            toast.info("Full submission view coming soon!");
-                          }}
+                          onClick={() => setSelectedSubmission(submission)}
                         >
                           View Details
                         </Button>
@@ -322,6 +340,57 @@ export default function FormAnalyticsPage() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={!!selectedSubmission} onOpenChange={(open) => !open && setSelectedSubmission(null)}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Submission details</DialogTitle>
+            <DialogDescription>
+              {selectedSubmission
+                ? `Submitted ${new Date(selectedSubmission.created_at).toLocaleString()}`
+                : ""}
+            </DialogDescription>
+          </DialogHeader>
+          {selectedSubmission && (
+            <div className="space-y-4 text-sm">
+              <div className="grid grid-cols-2 gap-2 text-muted-foreground">
+                <div>
+                  <p className="font-medium text-foreground">IP</p>
+                  <p>{selectedSubmission.ip_address || "N/A"}</p>
+                </div>
+                <div>
+                  <p className="font-medium text-foreground">Payment</p>
+                  <p>
+                    {selectedSubmission.payment_status
+                      ? `${selectedSubmission.payment_status}${
+                          selectedSubmission.payment_amount
+                            ? ` ($${(selectedSubmission.payment_amount / 100).toFixed(2)})`
+                            : ""
+                        }`
+                      : "None"}
+                  </p>
+                </div>
+              </div>
+              <div className="space-y-3 border-t pt-3">
+                {(form?.schema_json.fields || []).map((field) => {
+                  const raw = selectedSubmission.payload_json?.[field.id];
+                  const display = Array.isArray(raw)
+                    ? raw.join(", ")
+                    : raw === undefined || raw === null || raw === ""
+                      ? "—"
+                      : String(raw);
+                  return (
+                    <div key={field.id}>
+                      <p className="font-medium">{field.label}</p>
+                      <p className="text-muted-foreground break-words">{display}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -153,14 +153,14 @@ function SearchHistorySidebarInner({
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: -400, opacity: 0 }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed top-16 left-0 bottom-0 w-[360px] max-w-[85vw] z-50 bg-white dark:bg-slate-950 border-r shadow-2xl flex flex-col"
+            className="fixed top-16 left-0 bottom-0 w-[360px] max-w-[85vw] z-50 bg-[var(--paper)] border-r border-[var(--surface-border)] shadow-[var(--shadow-lg)] flex flex-col"
             role="complementary"
             aria-label="Search history"
           >
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b">
               <div className="flex items-center gap-2">
-                <History className="w-5 h-5 text-purple-600" />
+                <History className="w-5 h-5 text-[var(--ocean)]" />
                 <h2 className="text-lg font-semibold">Search History</h2>
                 {data && (
                   <Badge variant="secondary" className="text-xs">
@@ -233,7 +233,7 @@ function SearchHistorySidebarInner({
             <ScrollArea className="flex-1 px-4">
               {isLoading ? (
                 <div className="flex items-center justify-center py-12">
-                  <Loader2 className="w-6 h-6 animate-spin text-purple-500" />
+                  <Loader2 className="w-6 h-6 animate-spin text-[var(--ocean)]" />
                 </div>
               ) : isError ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">

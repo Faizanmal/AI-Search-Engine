@@ -33,8 +33,6 @@ from .views import (
     RegisterView,
     UserMeView,
     RefreshTokenView,
-    # Forms
-    FormListView,
     # Collections / Collaboration
     CollectionListCreateView,
     CollectionDetailView,
@@ -59,6 +57,31 @@ from .views import (
     # API Keys
     APIKeyListCreateView,
     APIKeyDeleteView,
+)
+from .form_views import (
+    FormListCreateView,
+    FormDetailView,
+    FormPublishView,
+    FormEmbedView,
+    FormAnalyticsView,
+    FormGenerateView,
+    PublicFormBySlugView,
+    PublicSubmitView,
+    FormSubmissionListView,
+    FormSubmissionDetailView,
+    FormSubmissionExportView,
+    TemplateListView,
+    TemplateDetailView,
+    TemplateUseView,
+    FormIntegrationsListView,
+    IntegrationListCreateView,
+    IntegrationDetailView,
+    IntegrationTestView,
+    GoogleSheetsAuthView,
+    GoogleSheetsConnectView,
+    WebhookLogListView,
+    WebhookLogRetryView,
+    StripeCheckoutConfirmView,
 )
 
 urlpatterns = [
@@ -96,7 +119,57 @@ urlpatterns = [
     path("users/me/", UserMeView.as_view(), name="user-me"),
 
     # ---- Forms ------------------------------------------------------------
-    path("forms/", FormListView.as_view(), name="form-list"),
+    path("forms/", FormListCreateView.as_view(), name="form-list-create"),
+    path("forms/<int:pk>/", FormDetailView.as_view(), name="form-detail"),
+    path("forms/<int:pk>/publish/", FormPublishView.as_view(), name="form-publish"),
+    path("forms/<int:pk>/embed/", FormEmbedView.as_view(), name="form-embed"),
+    path("forms/<int:pk>/analytics/", FormAnalyticsView.as_view(), name="form-analytics"),
+    path("forms/<int:form_id>/submissions/", FormSubmissionListView.as_view(), name="form-submissions"),
+    path(
+        "forms/<int:form_id>/submissions/export/",
+        FormSubmissionExportView.as_view(),
+        name="form-submissions-export",
+    ),
+    path(
+        "forms/<int:form_id>/submissions/<int:submission_id>/",
+        FormSubmissionDetailView.as_view(),
+        name="form-submission-detail",
+    ),
+    path(
+        "forms/<int:form_id>/integrations/",
+        FormIntegrationsListView.as_view(),
+        name="form-integrations",
+    ),
+    path("generate/", FormGenerateView.as_view(), name="form-generate"),
+    path("public/forms/<slug:slug>/", PublicFormBySlugView.as_view(), name="public-form"),
+    path("public/submit/<slug:slug>/", PublicSubmitView.as_view(), name="public-submit"),
+    path("templates/", TemplateListView.as_view(), name="template-list"),
+    path("templates/<uuid:pk>/", TemplateDetailView.as_view(), name="template-detail"),
+    path("templates/<uuid:pk>/use/", TemplateUseView.as_view(), name="template-use"),
+    path("integrations/", IntegrationListCreateView.as_view(), name="integration-list-create"),
+    path("integrations/<uuid:pk>/", IntegrationDetailView.as_view(), name="integration-detail"),
+    path("integrations/<uuid:pk>/test/", IntegrationTestView.as_view(), name="integration-test"),
+    path(
+        "integrations/google_sheets_auth/",
+        GoogleSheetsAuthView.as_view(),
+        name="google-sheets-auth",
+    ),
+    path(
+        "integrations/google_sheets_connect/",
+        GoogleSheetsConnectView.as_view(),
+        name="google-sheets-connect",
+    ),
+    path(
+        "integrations/stripe/confirm/",
+        StripeCheckoutConfirmView.as_view(),
+        name="stripe-confirm",
+    ),
+    path("integrations/webhook-logs/", WebhookLogListView.as_view(), name="webhook-log-list"),
+    path(
+        "integrations/webhook-logs/<uuid:log_id>/retry/",
+        WebhookLogRetryView.as_view(),
+        name="webhook-log-retry",
+    ),
 
     # ---- Collections / Collaboration --------------------------------------
     path("collections/", CollectionListCreateView.as_view(), name="collection-list-create"),

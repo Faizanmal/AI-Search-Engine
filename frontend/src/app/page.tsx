@@ -2,219 +2,251 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { FadeIn, ScaleInView, StaggerContainer, StaggerItem, FloatingElement, GradientText } from "@/components/animations";
+import { FadeIn, ScaleInView, StaggerContainer, StaggerItem } from "@/components/animations";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { 
-  Sparkles, 
-  Zap, 
-  Shield, 
-  BarChart3, 
-  Rocket, 
+import {
+  Shield,
+  Zap,
+  BarChart3,
   Search,
   Brain,
-  TrendingUp,
-  Star,
   ArrowRight,
-  Check
+  Quote,
 } from "lucide-react";
 
 export default function Home() {
-  const features = [
+  const capabilities = [
     {
       icon: Search,
-      title: "AI-Powered Search",
-      description: "Get accurate answers from multiple sources with intelligent web search",
-      gradient: "from-purple-500 to-pink-500"
-    },
-    {
-      icon: Brain,
-      title: "Smart Analysis",
-      description: "Advanced AI analyzes and synthesizes information from trusted sources",
-      gradient: "from-blue-500 to-cyan-500"
+      title: "Cited answers",
+      description: "Every response pulls from live sources and shows where claims come from.",
     },
     {
       icon: Shield,
-      title: "Trust Scores",
-      description: "Every answer comes with a trust score and verified citations",
-      gradient: "from-green-500 to-emerald-500"
+      title: "Trust scoring",
+      description: "Confidence meters and fact-check modes keep shaky claims visible.",
+    },
+    {
+      icon: Brain,
+      title: "Mode-aware search",
+      description: "Switch between text, academic, news, code, and image research.",
     },
     {
       icon: Zap,
-      title: "Lightning Fast",
-      description: "Get comprehensive answers in seconds with our optimized pipeline",
-      gradient: "from-yellow-500 to-orange-500"
+      title: "Fast synthesis",
+      description: "Ask once — get a clear answer, follow-ups, and exportable history.",
     },
     {
       icon: BarChart3,
-      title: "Smart Forms",
-      description: "Create intelligent forms with AI-generated fields and validation",
-      gradient: "from-red-500 to-pink-500"
+      title: "FormForge",
+      description: "Generate, publish, and measure intelligent forms from the same workspace.",
     },
     {
-      icon: TrendingUp,
-      title: "Analytics",
-      description: "Track form performance with detailed analytics and insights",
-      gradient: "from-indigo-500 to-purple-500"
-    }
-  ];
-
-  const stats = [
-    { value: "99.9%", label: "Uptime" },
-    { value: "50K+", label: "Searches" },
-    { value: "10K+", label: "Users" },
-    { value: "4.9/5", label: "Rating" }
+      icon: Quote,
+      title: "Collections & alerts",
+      description: "Save threads, share collections, and watch topics as they shift.",
+    },
   ];
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-slate-50 via-cyan-50 to-emerald-50 dark:from-slate-950 dark:via-cyan-950/40 dark:to-emerald-950/40 overflow-hidden">
-      {/* Animated background elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-4 md:left-10 w-48 h-48 md:w-72 md:h-72 bg-purple-300 dark:bg-purple-700 rounded-full mix-blend-multiply dark:mix-blend-soft-light filter blur-xl opacity-30 animate-blob"></div>
-        <div className="absolute top-40 right-4 md:right-10 w-48 h-48 md:w-72 md:h-72 bg-blue-300 dark:bg-blue-700 rounded-full mix-blend-multiply dark:mix-blend-soft-light filter blur-xl opacity-30 animate-blob animation-delay-2000"></div>
-        <div className="absolute -bottom-8 left-1/2 w-48 h-48 md:w-72 md:h-72 bg-pink-300 dark:bg-pink-700 rounded-full mix-blend-multiply dark:mix-blend-soft-light filter blur-xl opacity-30 animate-blob animation-delay-4000"></div>
-      </div>
-
-      {/* Hero Section */}
-      <section className="relative section-spacing pt-20 md:pt-32">
-        <div className="content-max-width container-padding">
-          <div className="text-center space-y-6 md:space-y-8 max-w-5xl mx-auto">
-          <FadeIn delay={0.1}>
-            <div className="inline-flex items-center gap-2 px-3 md:px-4 py-2 rounded-full glass border border-white/20 mb-4">
-              <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-              <span className="text-sm font-medium">Introducing Advanced Search Engine</span>
-            </div>
-          </FadeIn>
-
-          <FadeIn delay={0.2}>
-            <h1 className="heading-primary">
-              Search Smarter with{" "}
-              <GradientText className="heading-primary">
-                AI-Powered
-              </GradientText>
-              <br className="hidden sm:block" />
-              <span className="sm:hidden"> </span>Intelligence
-            </h1>
-          </FadeIn>
-
-          <FadeIn delay={0.3}>
-            <p className="text-display max-w-3xl mx-auto">
-              Get accurate, well-researched answers with citations from trusted sources.
-              Build intelligent forms in seconds with AI assistance.
-            </p>
-          </FadeIn>
-
-          <FadeIn delay={0.4}>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8 md:mt-12">
-              <Link href="/search">
-                <Button size="xl" variant="gradient" className="w-full sm:w-auto group rounded-xl">
-                  Start Searching
-                  <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </Button>
-              </Link>
-              <Link href="/dashboard">
-                <Button size="xl" variant="outline" className="w-full sm:w-auto rounded-xl hover-lift glass border-2">
-                  Create Forms
-                  <Rocket className="ml-2 w-5 h-5" />
-                </Button>
-              </Link>
-            </div>
-          </FadeIn>
-
-          {/* Stats */}
-          <FadeIn delay={0.5}>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 lg:gap-8 mt-12 md:mt-20 max-w-4xl mx-auto">
-              {stats.map((stat, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ scale: 0.8, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: 0.6 + index * 0.1, duration: 0.5 }}
-                  className="text-center p-4 md:p-6 rounded-xl glass border border-white/20 hover-lift"
-                >
-                  <div className="text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold gradient-text mb-2">{stat.value}</div>
-                  <div className="text-xs md:text-sm lg:text-base text-muted-foreground font-medium">{stat.label}</div>
-                </motion.div>
-              ))}
-            </div>
-          </FadeIn>
+    <div className="min-h-screen app-atmosphere overflow-hidden">
+      {/* Hero — one composition: brand, headline, support, CTAs, visual */}
+      <section className="relative min-h-[calc(100vh-4rem)] flex flex-col">
+        <div className="absolute inset-0 bg-atlas-mesh pointer-events-none" />
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <motion.div
+            className="absolute -top-24 left-1/2 -translate-x-1/2 w-[90vw] max-w-5xl h-[42vh] rounded-[50%] bg-[radial-gradient(ellipse_at_center,rgba(23,107,134,0.16),transparent_70%)]"
+            animate={{ opacity: [0.55, 0.85, 0.55], scale: [1, 1.04, 1] }}
+            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+          />
         </div>
+
+        <div className="relative flex-1 content-max-width container-padding flex flex-col justify-center py-12 md:py-16 lg:py-20">
+          <div className="grid lg:grid-cols-12 gap-10 lg:gap-8 items-center">
+            <div className="lg:col-span-6 space-y-7 md:space-y-8">
+              <FadeIn delay={0.05}>
+                <p className="font-display text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-[var(--ink)]">
+                  Atlas<span className="text-[var(--ocean)]"> Search</span>
+                </p>
+              </FadeIn>
+
+              <FadeIn delay={0.15}>
+                <h1 className="font-display text-3xl sm:text-4xl md:text-5xl lg:text-[3.25rem] font-bold leading-[1.08] tracking-tight text-[var(--ink)] max-w-xl">
+                  Answers you can trace back to the source.
+                </h1>
+              </FadeIn>
+
+              <FadeIn delay={0.25}>
+                <p className="text-base md:text-lg text-muted-foreground max-w-md leading-relaxed">
+                  Research the open web with citations, trust scores, and modes built for serious questions.
+                </p>
+              </FadeIn>
+
+              <FadeIn delay={0.35}>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-1">
+                  <Link href="/search">
+                    <Button
+                      size="lg"
+                      className="w-full sm:w-auto h-12 px-7 rounded-lg font-semibold bg-[var(--signal)] hover:bg-[var(--signal-deep)] text-white shadow-md group"
+                    >
+                      Start searching
+                      <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                    </Button>
+                  </Link>
+                  <Link href="/dashboard">
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      className="w-full sm:w-auto h-12 px-7 rounded-lg font-medium border-[var(--ink)]/15 bg-white/50 hover:bg-white/80"
+                    >
+                      Open FormForge
+                    </Button>
+                  </Link>
+                </div>
+              </FadeIn>
+            </div>
+
+            {/* Dominant visual — product search plane */}
+            <div className="lg:col-span-6 relative">
+              <FadeIn delay={0.2}>
+                <motion.div
+                  className="relative w-full aspect-[4/3] md:aspect-[5/4] rounded-2xl overflow-hidden border border-[var(--surface-border)] shadow-[var(--shadow-lg)] bg-[var(--ink)]"
+                  initial={{ opacity: 0, y: 24 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_20%_0%,rgba(42,155,176,0.35),transparent_50%),radial-gradient(ellipse_at_80%_100%,rgba(240,90,43,0.22),transparent_45%)]" />
+                  <div
+                    className="absolute inset-0 opacity-[0.12]"
+                    style={{
+                      backgroundImage:
+                        "linear-gradient(to right, #fff 1px, transparent 1px), linear-gradient(to bottom, #fff 1px, transparent 1px)",
+                      backgroundSize: "36px 36px",
+                    }}
+                  />
+
+                  <div className="absolute inset-0 flex flex-col p-5 sm:p-7 md:p-8">
+                    <div className="flex items-center gap-2 mb-6">
+                      <div className="w-2 h-2 rounded-full bg-[var(--signal)]" />
+                      <span className="text-[11px] uppercase tracking-[0.18em] text-white/55 font-medium">
+                        Live research
+                      </span>
+                    </div>
+
+                    <motion.div
+                      className="rounded-xl bg-white/10 border border-white/15 backdrop-blur-sm p-4 sm:p-5 mb-4"
+                      animate={{ y: [0, -4, 0] }}
+                      transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+                    >
+                      <p className="text-xs text-white/45 mb-2 font-medium">Query</p>
+                      <p className="font-display text-base sm:text-lg text-white leading-snug">
+                        What drives trustworthy AI search results?
+                      </p>
+                    </motion.div>
+
+                    <motion.div
+                      className="flex-1 rounded-xl bg-white/[0.07] border border-white/10 p-4 sm:p-5 space-y-3"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.5, duration: 0.6 }}
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-xs text-white/45 font-medium">Synthesized answer</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-400/20 text-emerald-200 border border-emerald-400/20">
+                          Trust 92
+                        </span>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="h-2 rounded bg-white/20 w-[92%] animate-sweep" />
+                        <div className="h-2 rounded bg-white/15 w-[78%] animate-sweep [animation-delay:120ms]" />
+                        <div className="h-2 rounded bg-white/10 w-[64%] animate-sweep [animation-delay:240ms]" />
+                      </div>
+                      <div className="flex gap-2 pt-2 flex-wrap">
+                        {["Nature", "arXiv", "IEEE"].map((src, i) => (
+                          <motion.span
+                            key={src}
+                            initial={{ opacity: 0, y: 6 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.8 + i * 0.12 }}
+                            className="text-[10px] sm:text-xs px-2.5 py-1 rounded-md bg-white/10 text-white/70 border border-white/10"
+                          >
+                            {src}
+                          </motion.span>
+                        ))}
+                      </div>
+                    </motion.div>
+                  </div>
+                </motion.div>
+              </FadeIn>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* Features Grid */}
-      <section className="relative section-spacing bg-white/30 dark:bg-black/30">
-        <div className="content-max-width container-padding">
-          <div className="text-center mb-12 md:mb-16">
-            <FadeIn delay={0.1}>
-              <h2 className="heading-secondary mb-4 md:mb-6">
-                Powerful <GradientText className="heading-secondary">Features</GradientText>
+      {/* Capabilities — one job */}
+      <section className="relative border-t border-[var(--surface-border)] bg-[var(--paper)]/60">
+        <div className="content-max-width container-padding section-spacing">
+          <div className="max-w-2xl mb-10 md:mb-14">
+            <FadeIn>
+              <h2 className="heading-secondary text-[var(--ink)] mb-3">
+                Built for research, not scrollbait.
               </h2>
-              <p className="text-display max-w-2xl mx-auto">
-                Everything you need to search, analyze, and create intelligent forms
+              <p className="text-display">
+                One workspace for searching, verifying, saving, and turning insights into forms.
               </p>
             </FadeIn>
           </div>
 
-          <StaggerContainer className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8">
-          {features.map((feature, index) => (
-            <StaggerItem key={index}>
-              <motion.div
-                whileHover={{ scale: 1.02, y: -4 }}
-                transition={{ duration: 0.3, ease: "easeOut" }}
-              >
-                <Card className="h-full card-hover glass border-white/30 overflow-hidden group">
-                  <CardContent className="p-6 md:p-8 space-y-4 md:space-y-5">
-                    <div className={`inline-flex p-3 md:p-4 rounded-2xl bg-linear-to-br ${feature.gradient} shadow-xl`}>
-                      <feature.icon className="w-6 h-6 md:w-7 md:h-7 text-white" />
-                    </div>
-                    <h3 className="text-xl md:text-2xl font-bold">{feature.title}</h3>
-                    <p className="text-muted-foreground leading-relaxed text-sm md:text-base">{feature.description}</p>
-                    <div className="pt-2 flex items-center text-sm font-semibold text-purple-600 dark:text-purple-400 group-hover:translate-x-2 transition-transform">
-                      Learn more <ArrowRight className="ml-1 w-4 h-4" />
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            </StaggerItem>
-          ))}
-        </StaggerContainer>
+          <StaggerContainer className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-10">
+            {capabilities.map((item) => (
+              <StaggerItem key={item.title}>
+                <div className="group space-y-3">
+                  <div className="inline-flex w-10 h-10 items-center justify-center rounded-lg bg-[var(--sea-light)] text-[var(--ocean-deep)] transition-colors group-hover:bg-[var(--ocean)] group-hover:text-white">
+                    <item.icon className="w-5 h-5" />
+                  </div>
+                  <h3 className="font-display text-lg font-bold text-[var(--ink)]">{item.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{item.description}</p>
+                </div>
+              </StaggerItem>
+            ))}
+          </StaggerContainer>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="relative section-spacing">
-        <div className="content-max-width container-padding">
+      {/* Closing CTA */}
+      <section className="relative border-t border-[var(--surface-border)]">
+        <div className="content-max-width container-padding section-spacing">
           <ScaleInView>
-            <Card className="glass border-white/30 overflow-hidden shadow-2xl">
-              <div className="absolute inset-0 bg-linear-to-r from-teal-600/10 via-cyan-600/10 to-emerald-600/10"></div>
-              <CardContent className="relative p-8 md:p-12 lg:p-16 text-center space-y-6 md:space-y-8">
-              <FloatingElement>
-                <div className="inline-flex p-4 md:p-5 rounded-full bg-linear-to-r from-teal-600 to-cyan-700 shadow-2xl mb-4 md:mb-6">
-                  <Star className="w-8 h-8 md:w-10 md:h-10 text-white" />
+            <div className="relative overflow-hidden rounded-2xl bg-[var(--ink)] px-6 py-12 md:px-12 md:py-16">
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_0%_0%,rgba(42,155,176,0.28),transparent_50%),radial-gradient(ellipse_at_100%_100%,rgba(240,90,43,0.2),transparent_45%)]" />
+              <div className="relative max-w-xl">
+                <h2 className="font-display text-3xl md:text-4xl font-bold text-white tracking-tight mb-3">
+                  Start with a question.
+                </h2>
+                <p className="text-white/65 text-base md:text-lg mb-8 leading-relaxed">
+                  No setup theater — open search and get a cited answer in seconds.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Link href="/register">
+                    <Button
+                      size="lg"
+                      className="w-full sm:w-auto h-12 px-7 rounded-lg font-semibold bg-[var(--signal)] hover:bg-[var(--signal-deep)] text-white"
+                    >
+                      Create free account
+                    </Button>
+                  </Link>
+                  <Link href="/search">
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      className="w-full sm:w-auto h-12 px-7 rounded-lg font-medium border-white/25 bg-transparent text-white hover:bg-white/10 hover:text-white"
+                    >
+                      Try search first
+                    </Button>
+                  </Link>
                 </div>
-              </FloatingElement>
-              <h2 className="heading-secondary">
-                Ready to Get Started?
-              </h2>
-              <p className="text-display max-w-2xl mx-auto">
-                Join thousands of users who are already using our AI-powered platform
-              </p>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4 md:pt-6">
-                <Link href="/register">
-                  <Button size="xl" variant="gradient" className="w-full sm:w-auto rounded-xl">
-                    Sign Up Free
-                    <Check className="ml-2 w-5 h-5" />
-                  </Button>
-                </Link>
-                <Link href="/login">
-                  <Button size="xl" variant="outline" className="w-full sm:w-auto rounded-xl hover-lift glass border-2">
-                    Sign In
-                  </Button>
-                </Link>
               </div>
-              </CardContent>
-            </Card>
+            </div>
           </ScaleInView>
         </div>
       </section>

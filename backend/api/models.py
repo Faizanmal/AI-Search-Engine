@@ -444,6 +444,34 @@ class APIKey(models.Model):
             self.key = f"ask_{uuid.uuid4().hex}"
         super().save(*args, **kwargs)
 
+    def reset_daily_if_needed(self) -> None:
+        """Zero the daily counter when the calendar day rolls over."""
+        now = timezone.now()
+        if self.last_used is None or self.last_used.date() < now.date():
+            if self.requests_today != 0:
+                self.requests_today = 0
+
+    def consume_quota(self) -> bool:
+        """
+        Atomically consume one request against the daily limit.
+        Returns False if the key is over quota.
+        """
+        self.reset_daily_if_needed()
+        if self.requests_today >= self.daily_limit:
+            return False
+        self.requests_today += 1
+        self.requests_total += 1
+        self.last_used = timezone.now()
+        self.save(
+            update_fields=["requests_today", "requests_total", "last_used"]
+        )
+        return True
+
+    @property
+    def remaining_today(self) -> int:
+        self.reset_daily_if_needed()
+        return max(0, self.daily_limit - self.requests_today)
+
 
 # ---------------------------------------------------------------------------
 # Trend Snapshots (Enhanced Analytics)
@@ -472,20 +500,22 @@ class TrendSnapshot(models.Model):
 
 
 # ---------------------------------------------------------------------------
-# Forms (existing)
+# Forms (FormForge)
 # ---------------------------------------------------------------------------
 
 class Form(models.Model):
-    """Model for storing AI-generated forms."""
+    """AI-generated / manually edited form definition."""
 
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     schema_json = models.JSONField(default=dict)
+    settings_json = models.JSONField(default=dict, blank=True)
+    is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="forms")
     published_at = models.DateTimeField(null=True, blank=True)
-    slug = models.SlugField(unique=True)
+    slug = models.SlugField(unique=True, max_length=255)
     views_count = models.IntegerField(default=0)
     submissions_count = models.IntegerField(default=0)
     conversion_rate = models.FloatField(default=0.0)
@@ -496,18 +526,133 @@ class Form(models.Model):
     def __str__(self):
         return self.title
 
+    def refresh_conversion_rate(self):
+        if self.views_count > 0:
+            self.conversion_rate = round(
+                (self.submissions_count / self.views_count) * 100, 2
+            )
+        else:
+            self.conversion_rate = 0.0
+
 
 class FormSubmission(models.Model):
-    """Model for storing form submissions."""
+    """Individual form response."""
+
+    PAYMENT_STATUS_CHOICES = [
+        ("pending", "Pending"),
+        ("paid", "Paid"),
+        ("failed", "Failed"),
+        ("refunded", "Refunded"),
+        ("", "None"),
+    ]
 
     form = models.ForeignKey(Form, on_delete=models.CASCADE, related_name="submissions")
-    data = models.JSONField()
+    data = models.JSONField(default=dict)
     created_at = models.DateTimeField(auto_now_add=True)
+    processed_at = models.DateTimeField(null=True, blank=True)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     user_agent = models.TextField(blank=True)
+    payment_status = models.CharField(
+        max_length=16, choices=PAYMENT_STATUS_CHOICES, blank=True, default=""
+    )
+    payment_id = models.CharField(max_length=255, blank=True, default="")
+    payment_amount = models.PositiveIntegerField(
+        null=True, blank=True, help_text="Amount in cents"
+    )
 
     class Meta:
         ordering = ["-created_at"]
 
     def __str__(self):
         return f"Submission for {self.form.title}"
+
+
+class FormTemplate(models.Model):
+    """Reusable form template."""
+
+    CATEGORY_CHOICES = [
+        ("photography", "Photography"),
+        ("health", "Health"),
+        ("fitness", "Fitness"),
+        ("real_estate", "Real Estate"),
+        ("consulting", "Consulting"),
+        ("events", "Events"),
+        ("general", "General"),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True, default="")
+    category = models.CharField(max_length=32, choices=CATEGORY_CHOICES, default="general")
+    schema_json = models.JSONField(default=dict)
+    thumbnail_url = models.URLField(blank=True, default="")
+    usage_count = models.PositiveIntegerField(default=0)
+    is_featured = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-is_featured", "-usage_count", "name"]
+
+    def __str__(self):
+        return self.name
+
+
+class FormIntegration(models.Model):
+    """Per-form integration (webhook, email, sheets, stripe, etc.)."""
+
+    TYPE_CHOICES = [
+        ("google_sheets", "Google Sheets"),
+        ("notion", "Notion"),
+        ("webhook", "Webhook"),
+        ("stripe", "Stripe"),
+        ("email", "Email"),
+        ("zapier", "Zapier"),
+        ("slack", "Slack"),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    form = models.ForeignKey(Form, on_delete=models.CASCADE, related_name="integrations")
+    integration_type = models.CharField(max_length=32, choices=TYPE_CHOICES)
+    name = models.CharField(max_length=255, blank=True, default="")
+    config = models.JSONField(default=dict)
+    is_active = models.BooleanField(default=True)
+    last_triggered_at = models.DateTimeField(null=True, blank=True)
+    error_message = models.TextField(blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        unique_together = [("form", "integration_type")]
+
+    def __str__(self):
+        return f"{self.integration_type} → {self.form.title}"
+
+
+class WebhookLog(models.Model):
+    """Delivery log for webhook integrations."""
+
+    STATUS_CHOICES = [
+        ("success", "Success"),
+        ("failed", "Failed"),
+        ("pending", "Pending"),
+        ("retrying", "Retrying"),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    integration = models.ForeignKey(
+        FormIntegration, on_delete=models.CASCADE, related_name="webhook_logs"
+    )
+    payload = models.JSONField(default=dict)
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default="pending")
+    response_status_code = models.PositiveIntegerField(null=True, blank=True)
+    error_message = models.TextField(blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"WebhookLog {self.status} ({self.id})"

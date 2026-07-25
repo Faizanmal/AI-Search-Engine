@@ -32,6 +32,10 @@ export interface QueryResponse {
   search_mode?: SearchMode;
   fact_check_result?: FactCheckResult;
   tags?: string[];
+  degraded?: boolean;
+  degraded_reason?: string | null;
+  cached?: boolean;
+  active_plugins?: string[];
 }
 
 export interface Message {
@@ -48,6 +52,9 @@ export interface Message {
   isRegenerating?: boolean;
   search_mode?: SearchMode;
   tags?: string[];
+  fact_check_result?: FactCheckResult;
+  degraded?: boolean;
+  degraded_reason?: string | null;
 }
 
 export interface SimilarQuery {
@@ -71,6 +78,7 @@ export interface SearchHistoryEntry {
   response_time_ms: number;
   search_mode: SearchMode;
   fact_checked: boolean;
+  fact_check_result?: FactCheckResult;
   tags: string[];
   created_at: string;
 }

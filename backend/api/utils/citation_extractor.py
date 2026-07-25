@@ -52,12 +52,8 @@ class CitationExtractor:
             }
             
             formatted_sources.append(formatted_source)
-        
-        # Sort: cited sources first, then by score
-        formatted_sources.sort(
-            key=lambda x: (not x['cited'], -x['score'])
-        )
-        
+
+        # Keep original order so [n] markers in the answer still match source ids.
         return {
             'sources': formatted_sources,
             'total_sources': len(sources),
@@ -199,16 +195,27 @@ class CitationExtractor:
             Frontend-formatted source list
         """
         formatted = []
-        
-        for source in sources[:max_display]:
-            formatted.append({
-                'id': source.get('id', 0),
-                'url': source.get('url', ''),
-                'title': source.get('title', 'Untitled')[:100],
-                'snippet': source.get('snippet', '')[:250] + '...',
-                'domain': source.get('domain', 'unknown'),
-                'favicon': f"https://www.google.com/s2/favicons?domain={source.get('url', '')}",
-                'cited': source.get('cited', False)
-            })
-        
+
+        for idx, source in enumerate(sources[:max_display], 1):
+            snippet = (source.get("snippet") or "").strip()
+            if len(snippet) > 250:
+                snippet = snippet[:250].rstrip() + "…"
+
+            domain = source.get("domain") or self._extract_domain(source.get("url", ""))
+            source_id = source.get("id") or source.get("position") or idx
+
+            formatted.append(
+                {
+                    "id": source_id,
+                    "position": source_id,
+                    "url": source.get("url", ""),
+                    "title": (source.get("title") or "Untitled")[:100],
+                    "snippet": snippet,
+                    "domain": domain or "unknown",
+                    "favicon": f"https://www.google.com/s2/favicons?domain={domain or source.get('url', '')}&sz=32",
+                    "score": source.get("score", 0.0),
+                    "cited": source.get("cited", False),
+                }
+            )
+
         return formatted

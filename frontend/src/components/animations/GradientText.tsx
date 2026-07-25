@@ -12,12 +12,12 @@ interface GradientTextProps {
 export function GradientText({ children, className = '', animate = true }: GradientTextProps) {
   return (
     <motion.span
-      className={`bg-linear-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent ${className}`}
+      className={`bg-linear-to-r from-[var(--ocean-deep)] via-[var(--ocean)] to-[#2a9bb0] bg-clip-text text-transparent ${className}`}
       animate={animate ? {
         backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
       } : undefined}
       transition={animate ? {
-        duration: 5,
+        duration: 6,
         repeat: Infinity,
         ease: 'linear',
       } : undefined}

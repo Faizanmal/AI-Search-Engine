@@ -16,7 +16,9 @@ from .models import (
     CollectionComment,
     FactCheck,
     Form,
+    FormIntegration,
     FormSubmission,
+    FormTemplate,
     Plugin,
     SearchAnalytics,
     SearchCollection,
@@ -25,6 +27,7 @@ from .models import (
     TrendSnapshot,
     UserPlugin,
     UserPreference,
+    WebhookLog,
 )
 from .utils.sanitizer import sanitize_query
 
@@ -50,11 +53,30 @@ class QuerySerializer(serializers.Serializer):
         help_text='Filter sources by type: "general", "academic", "news"',
     )
     enable_fact_check = serializers.BooleanField(default=False, required=False)
+    conversation_history = serializers.ListField(
+        child=serializers.DictField(),
+        required=False,
+        default=list,
+        help_text="Prior turns: [{role: user|assistant, content: string}, ...]",
+    )
 
     def validate_query(self, value):
         cleaned = sanitize_query(value)
         if not cleaned:
             raise serializers.ValidationError("Query cannot be empty after sanitization.")
+        return cleaned
+
+    def validate_conversation_history(self, value):
+        if not value:
+            return []
+        cleaned = []
+        for turn in value[-6:]:
+            if not isinstance(turn, dict):
+                continue
+            role = turn.get("role")
+            content = (turn.get("content") or "").strip()
+            if role in ("user", "assistant") and content:
+                cleaned.append({"role": role, "content": content[:2000]})
         return cleaned
 
 
@@ -87,6 +109,14 @@ class QueryResponseSerializer(serializers.Serializer):
     search_mode = serializers.CharField(required=False)
     fact_check_result = serializers.DictField(required=False)
     tags = serializers.ListField(child=serializers.CharField(), required=False)
+    degraded = serializers.BooleanField(required=False, default=False)
+    degraded_reason = serializers.CharField(
+        required=False, allow_blank=True, allow_null=True, default=None
+    )
+    cached = serializers.BooleanField(required=False, default=False)
+    active_plugins = serializers.ListField(
+        child=serializers.CharField(), required=False, allow_empty=True
+    )
 
 
 class SimilarQuerySerializer(serializers.Serializer):
@@ -116,6 +146,7 @@ class SearchHistorySerializer(serializers.ModelSerializer):
             "response_time_ms",
             "search_mode",
             "fact_checked",
+            "fact_check_result",
             "tags",
             "created_at",
         ]
@@ -484,6 +515,8 @@ class FormSerializer(serializers.ModelSerializer):
             "title",
             "description",
             "schema_json",
+            "settings_json",
+            "is_active",
             "slug",
             "created_at",
             "updated_at",
@@ -502,8 +535,126 @@ class FormSerializer(serializers.ModelSerializer):
         ]
 
 
+class FormCreateSerializer(serializers.Serializer):
+    title = serializers.CharField(required=False, allow_blank=True)
+    description = serializers.CharField(required=False, allow_blank=True)
+    schema_json = serializers.JSONField(required=False)
+    settings_json = serializers.JSONField(required=False)
+    prompt = serializers.CharField(required=False, allow_blank=True)
+    context = serializers.CharField(required=False, allow_blank=True)
+
+
+class FormGenerateSerializer(serializers.Serializer):
+    prompt = serializers.CharField()
+    context = serializers.CharField(required=False, allow_blank=True, default="")
+
+
+class FormSchemaSerializer(serializers.Serializer):
+    title = serializers.CharField()
+    description = serializers.CharField(required=False, allow_blank=True)
+    fields = serializers.ListField(child=serializers.JSONField())
+    logic = serializers.ListField(child=serializers.JSONField(), required=False)
+    settings = serializers.JSONField(required=False)
+
+
 class FormSubmissionSerializer(serializers.ModelSerializer):
+    """Expose `payload_json` alias expected by the frontend."""
+
+    payload_json = serializers.JSONField(source="data")
+    form = serializers.CharField(source="form_id")
+
     class Meta:
         model = FormSubmission
-        fields = ["id", "form", "data", "created_at"]
-        read_only_fields = ["id", "created_at"]
+        fields = [
+            "id",
+            "form",
+            "payload_json",
+            "ip_address",
+            "user_agent",
+            "processed_at",
+            "payment_status",
+            "payment_id",
+            "payment_amount",
+            "created_at",
+        ]
+        read_only_fields = fields
+
+
+class PublicSubmitSerializer(serializers.Serializer):
+    payload = serializers.JSONField()
+
+
+class FormTemplateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FormTemplate
+        fields = [
+            "id",
+            "name",
+            "description",
+            "category",
+            "schema_json",
+            "thumbnail_url",
+            "usage_count",
+            "is_featured",
+            "created_at",
+            "updated_at",
+        ]
+
+
+class FormIntegrationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FormIntegration
+        fields = [
+            "id",
+            "form",
+            "integration_type",
+            "name",
+            "config",
+            "is_active",
+            "last_triggered_at",
+            "error_message",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = [
+            "id",
+            "last_triggered_at",
+            "error_message",
+            "created_at",
+            "updated_at",
+        ]
+
+
+class FormIntegrationCreateSerializer(serializers.Serializer):
+    form = serializers.CharField()
+    integration_type = serializers.ChoiceField(
+        choices=[
+            "google_sheets",
+            "notion",
+            "webhook",
+            "stripe",
+            "email",
+            "zapier",
+            "slack",
+        ]
+    )
+    config = serializers.JSONField(required=False, default=dict)
+    is_active = serializers.BooleanField(required=False, default=True)
+    name = serializers.CharField(required=False, allow_blank=True)
+
+
+class WebhookLogSerializer(serializers.ModelSerializer):
+    integration = serializers.CharField(source="integration_id")
+
+    class Meta:
+        model = WebhookLog
+        fields = [
+            "id",
+            "integration",
+            "payload",
+            "status",
+            "response_status_code",
+            "error_message",
+            "created_at",
+            "updated_at",
+        ]

@@ -37,21 +37,22 @@ export default function PluginsPage() {
   const uninstallPlugin = useUninstallPlugin();
 
   const installedIds = new Set(installed?.map((up) => up.plugin.id) ?? []);
+  const installedByPluginId = new Map((installed ?? []).map((up) => [up.plugin.id, up.id]));
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 pt-24 pb-12">
-      <div className="container mx-auto px-4 max-w-5xl">
+    <div className="min-h-screen app-atmosphere">
+      <div className="page-shell-inner max-w-5xl">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <h1 className="text-3xl font-bold bg-linear-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent flex items-center gap-3">
-            <Puzzle className="w-8 h-8 text-purple-600" />
+          <h1 className="page-title flex items-center gap-3">
+            <Puzzle className="w-7 h-7 text-[var(--ocean)]" />
             Plugin Marketplace
           </h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="page-subtitle">
             Extend your search engine with powerful add-ons
           </p>
         </motion.div>
@@ -69,13 +70,13 @@ export default function PluginsPage() {
             {isLoading && (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {[1, 2, 3, 4, 5, 6].map((i) => (
-                  <Card key={i} className="animate-pulse h-48" />
+                  <Card key={i} className="animate-pulse h-48 bg-[var(--paper)]/90 border-[var(--surface-border)] rounded-xl shadow-[var(--shadow-sm)]" />
                 ))}
               </div>
             )}
 
             {!isLoading && (!plugins || plugins.length === 0) && (
-              <Card className="text-center py-16">
+              <Card className="text-center py-16 bg-[var(--paper)]/90 border-[var(--surface-border)] rounded-xl shadow-[var(--shadow-sm)]">
                 <CardContent>
                   <Puzzle className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
                   <p className="text-lg font-medium">No plugins available</p>
@@ -93,7 +94,7 @@ export default function PluginsPage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                 >
-                  <Card className="h-full flex flex-col hover:shadow-lg transition-shadow">
+                  <Card className="h-full flex flex-col bg-[var(--paper)]/90 border-[var(--surface-border)] rounded-xl shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)] transition-shadow">
                     <CardHeader className="pb-2">
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-2">
@@ -124,7 +125,10 @@ export default function PluginsPage() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => uninstallPlugin.mutate(plugin.id)}
+                            onClick={() => {
+                              const userPluginId = installedByPluginId.get(plugin.id);
+                              if (userPluginId) uninstallPlugin.mutate(userPluginId);
+                            }}
                             disabled={uninstallPlugin.isPending}
                           >
                             <Trash2 className="w-3.5 h-3.5 mr-1" /> Uninstall
@@ -134,7 +138,7 @@ export default function PluginsPage() {
                             size="sm"
                             onClick={() => installPlugin.mutate({ pluginId: plugin.id })}
                             disabled={installPlugin.isPending}
-                            className="bg-linear-to-r from-purple-600 to-blue-600 text-white"
+                            className="bg-[var(--signal)] hover:bg-[var(--signal-deep)] text-white"
                           >
                             <Download className="w-3.5 h-3.5 mr-1" /> Install
                           </Button>
@@ -150,7 +154,7 @@ export default function PluginsPage() {
           {/* Installed Plugins */}
           <TabsContent value="installed">
             {(!installed || installed.length === 0) && (
-              <Card className="text-center py-16">
+              <Card className="text-center py-16 bg-[var(--paper)]/90 border-[var(--surface-border)] rounded-xl shadow-[var(--shadow-sm)]">
                 <CardContent>
                   <CheckCircle2 className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
                   <p className="text-lg font-medium">No plugins installed</p>
@@ -168,7 +172,7 @@ export default function PluginsPage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                 >
-                  <Card className="hover:shadow-lg transition-shadow">
+                  <Card className="bg-[var(--paper)]/90 border-[var(--surface-border)] rounded-xl shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)] transition-shadow">
                     <CardHeader className="pb-2">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
@@ -195,7 +199,7 @@ export default function PluginsPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => uninstallPlugin.mutate(up.plugin.id)}
+                          onClick={() => uninstallPlugin.mutate(up.id)}
                           disabled={uninstallPlugin.isPending}
                           className="text-red-500 hover:text-red-600"
                         >

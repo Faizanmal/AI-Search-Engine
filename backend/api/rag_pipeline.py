@@ -4,7 +4,7 @@ Orchestrates retrieval, summarization, and citation extraction
 """
 
 import os
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_pinecone import PineconeVectorStore
 # from langchain.chains import RetrievalQA
@@ -142,110 +142,151 @@ class RAGPipeline:
             print(f"Pinecone initialization failed: {e}")
             self.vector_store = None
     
-    async def process_query_stream(self, query: str):
+    async def process_query_stream(
+        self,
+        query: str,
+        search_mode: str = "text",
+        max_sources: int = 10,
+        source_types: Optional[List[str]] = None,
+        enable_followups: bool = True,
+        conversation_history: Optional[List[Dict]] = None,
+        dedupe_citations: bool = False,
+    ):
         """
         Process query and stream results
-        
+
         Yields:
-            Dict events: sources, answer_chunk, metadata
+            Dict events: sources, answer_chunk, metadata, status
         """
-        # Step 1: Retrieve relevant documents from web
-        web_results = await self.web_retriever.search(query, max_results=10)
-        
-        # Step 2: Validate and format sources
+        from .utils.plugins import dedupe_sources
+
+        yield {"type": "status", "data": "searching"}
+
+        retrieval = await self.web_retriever.search(
+            query,
+            max_results=max_sources,
+            search_mode=search_mode,
+            source_types=source_types or [],
+        )
+        web_results = retrieval["results"]
+        degraded = retrieval.get("degraded", False)
+        degraded_reason = retrieval.get("degraded_reason")
+
         validated_sources = self.citation_extractor.validate_sources(web_results)
+        if dedupe_citations:
+            validated_sources = dedupe_sources(validated_sources)
         formatted_sources = self.citation_extractor.format_for_frontend(validated_sources)
-        
-        yield {
-            "type": "sources",
-            "data": formatted_sources
-        }
-        
-        # Step 3: Create context from retrieved documents
+
+        yield {"type": "sources", "data": formatted_sources}
+
+        yield {"type": "status", "data": "generating"}
         context = self._create_context(validated_sources)
-        
-        # Step 4: Generate answer using LLM stream
+
         full_answer = ""
-        async for chunk in self.summarizer.stream_answer(query, context, validated_sources):
+        async for chunk in self.summarizer.stream_answer(
+            query, context, validated_sources, conversation_history=conversation_history
+        ):
             full_answer += chunk
-            yield {
-                "type": "answer_chunk",
-                "data": chunk
-            }
-        
-        # Step 5: Extract citation mapping and calculate trust score
+            yield {"type": "answer_chunk", "data": chunk}
+
         citation_info = self.citation_extractor.extract_citations(full_answer, validated_sources)
-        trust_score = self.citation_extractor.calculate_trust_score(validated_sources, full_answer, citation_info.get('cited_sources', 0))
-        
-        # Step 6: Generate follow-up questions
-        followups = await self.summarizer.generate_followups(query, full_answer)
-        
-        # Step 7: Store in vector database for future reference (if available)
+        trust_score = self.citation_extractor.calculate_trust_score(
+            validated_sources, full_answer, citation_info.get("cited_sources", 0)
+        )
+
+        followups: List[str] = []
+        if enable_followups:
+            followups = await self.summarizer.generate_followups(query, full_answer)
+
         if self.vector_store:
             await self._store_interaction(query, full_answer, validated_sources)
-        
+
         yield {
             "type": "metadata",
             "data": {
                 "trust_score": trust_score,
-                "followups": followups
-            }
+                "followups": followups,
+                "degraded": degraded,
+                "degraded_reason": degraded_reason,
+            },
         }
 
-    async def process_query(self, query: str, search_mode: str = "text") -> Dict[str, Any]:
+    async def process_query(
+        self,
+        query: str,
+        search_mode: str = "text",
+        max_sources: int = 10,
+        source_types: Optional[List[str]] = None,
+        enable_followups: bool = True,
+        conversation_history: Optional[List[Dict]] = None,
+        dedupe_citations: bool = False,
+    ) -> Dict[str, Any]:
         """
-        Main entry point for processing user queries
-        
-        Args:
-            query: User's search query
-            search_mode: One of text, image, academic, news, code
-            
-        Returns:
-            Dict containing answer, sources, trust_score, and followups
+        Main entry point for processing user queries.
         """
-        # Step 1: Retrieve relevant documents from web
-        max_results = 10
-        if search_mode == "academic":
-            max_results = 15  # More sources for academic mode
-        web_results = await self.web_retriever.search(query, max_results=max_results)
-        
-        # Step 2: Validate and format sources
-        validated_sources = self.citation_extractor.validate_sources(web_results)
-        
-        # Step 3: Create context from retrieved documents
-        context = self._create_context(validated_sources)
-        
-        # Step 4: Generate answer using LLM with mode-specific prompting
-        answer = await self.summarizer.generate_answer(
-            query, context, validated_sources, search_mode=search_mode
+        from .utils.plugins import dedupe_sources
+
+        # Academic mode defaults to more sources if caller didn't raise the cap
+        effective_max = max_sources
+        if search_mode == "academic" and max_sources < 15:
+            effective_max = min(15, max(max_sources, 12))
+
+        retrieval = await self.web_retriever.search(
+            query,
+            max_results=effective_max,
+            search_mode=search_mode,
+            source_types=source_types or [],
         )
-        # Handle dict response from generate_answer
-        if isinstance(answer, dict):
-            model_used = answer.get('model_used', '')
-            answer = answer.get('answer', '')
+        web_results = retrieval["results"]
+        degraded = bool(retrieval.get("degraded", False))
+        degraded_reason = retrieval.get("degraded_reason")
+
+        validated_sources = self.citation_extractor.validate_sources(web_results)
+        if dedupe_citations:
+            validated_sources = dedupe_sources(validated_sources)
+        context = self._create_context(validated_sources)
+
+        answer_payload = await self.summarizer.generate_answer(
+            query,
+            context,
+            validated_sources,
+            conversation_history=conversation_history,
+            search_mode=search_mode,
+        )
+        if isinstance(answer_payload, dict):
+            model_used = answer_payload.get("model_used", "")
+            answer = answer_payload.get("answer", "")
+            if answer_payload.get("degraded"):
+                degraded = True
+                degraded_reason = answer_payload.get("degraded_reason") or degraded_reason
         else:
-            model_used = ''
-        
-        # Step 5: Extract citations and calculate trust score
+            model_used = ""
+            answer = answer_payload
+
         citation_info = self.citation_extractor.extract_citations(answer, validated_sources)
-        trust_score = self.citation_extractor.calculate_trust_score(validated_sources, answer, citation_info.get('cited_sources', 0))
-        
-        # Step 6: Generate follow-up questions
-        followups = await self.summarizer.generate_followups(query, answer)
-        
-        # Step 7: Store in vector database for future reference (if available)
+        trust_score = self.citation_extractor.calculate_trust_score(
+            validated_sources, answer, citation_info.get("cited_sources", 0)
+        )
+
+        followups: List[str] = []
+        if enable_followups:
+            followups = await self.summarizer.generate_followups(query, answer)
+
         if self.vector_store:
             await self._store_interaction(query, answer, validated_sources)
-        
-        # Format sources for frontend
-        formatted_sources = self.citation_extractor.format_for_frontend(citation_info.get('sources', validated_sources))
-        
+
+        formatted_sources = self.citation_extractor.format_for_frontend(
+            citation_info.get("sources", validated_sources)
+        )
+
         return {
             "answer": answer,
             "sources": formatted_sources,
             "trust_score": trust_score,
             "followups": followups,
             "model_used": model_used,
+            "degraded": degraded,
+            "degraded_reason": degraded_reason,
         }
 
     async def fact_check_answer(

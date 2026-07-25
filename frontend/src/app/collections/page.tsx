@@ -78,8 +78,8 @@ export default function CollectionsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 pt-24 pb-12">
-      <div className="container mx-auto px-4 max-w-5xl">
+    <div className="min-h-screen app-atmosphere">
+      <div className="page-shell-inner max-w-5xl">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -87,18 +87,18 @@ export default function CollectionsPage() {
           className="flex items-center justify-between mb-8"
         >
           <div>
-            <h1 className="text-3xl font-bold bg-linear-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent flex items-center gap-3">
-              <FolderOpen className="w-8 h-8 text-purple-600" />
+            <h1 className="page-title flex items-center gap-3">
+              <FolderOpen className="w-7 h-7 text-[var(--ocean)]" />
               Collections
             </h1>
-            <p className="text-muted-foreground mt-1">
+            <p className="page-subtitle">
               Organize and collaborate on search research
             </p>
           </div>
 
           <Dialog open={createOpen} onOpenChange={setCreateOpen}>
             <DialogTrigger asChild>
-              <Button variant="default" className="bg-linear-to-r from-purple-600 to-blue-600 text-white">
+              <Button variant="default" className="bg-[var(--signal)] hover:bg-[var(--signal-deep)] text-white">
                 <Plus className="w-4 h-4 mr-2" /> New Collection
               </Button>
             </DialogTrigger>
@@ -142,14 +142,14 @@ export default function CollectionsPage() {
         {isLoading && (
           <div className="grid gap-4 md:grid-cols-2">
             {[1, 2, 3, 4].map((i) => (
-              <Card key={i} className="animate-pulse h-40" />
+              <Card key={i} className="animate-pulse h-40 bg-[var(--paper)]/90 border-[var(--surface-border)] rounded-xl shadow-[var(--shadow-sm)]" />
             ))}
           </div>
         )}
 
         {/* Empty */}
         {!isLoading && (!collections || collections.length === 0) && (
-          <Card className="text-center py-16">
+          <Card className="text-center py-16 bg-[var(--paper)]/90 border-[var(--surface-border)] rounded-xl shadow-[var(--shadow-sm)]">
             <CardContent>
               <FolderOpen className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
               <p className="text-lg font-medium">No collections yet</p>
@@ -171,7 +171,7 @@ export default function CollectionsPage() {
                 exit={{ opacity: 0, scale: 0.95 }}
                 layout
               >
-                <Card className="group hover:shadow-lg transition-shadow">
+                <Card className="group bg-[var(--paper)]/90 border-[var(--surface-border)] rounded-xl shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)] transition-shadow">
                   <CardHeader className="pb-2">
                     <div className="flex items-start justify-between">
                       <CardTitle className="text-lg">{col.name}</CardTitle>

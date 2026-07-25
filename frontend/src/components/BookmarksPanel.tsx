@@ -92,14 +92,14 @@ function BookmarksPanelInner({ isOpen, onClose, onSelectBookmark }: BookmarksPan
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: 400, opacity: 0 }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed top-16 right-0 bottom-0 w-[360px] max-w-[85vw] z-50 bg-white dark:bg-slate-950 border-l shadow-2xl flex flex-col"
+            className="fixed top-16 right-0 bottom-0 w-[360px] max-w-[85vw] z-50 bg-[var(--paper)] border-l border-[var(--surface-border)] shadow-[var(--shadow-lg)] flex flex-col"
             role="complementary"
             aria-label="Bookmarks"
           >
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b">
               <div className="flex items-center gap-2">
-                <BookmarkCheck className="w-5 h-5 text-yellow-500" />
+                <BookmarkCheck className="w-5 h-5 text-[var(--ocean)]" />
                 <h2 className="text-lg font-semibold">Bookmarks</h2>
                 {bookmarks && (
                   <Badge variant="secondary" className="text-xs">
@@ -122,7 +122,7 @@ function BookmarksPanelInner({ isOpen, onClose, onSelectBookmark }: BookmarksPan
             <ScrollArea className="flex-1 px-4 py-2">
               {isLoading ? (
                 <div className="flex items-center justify-center py-12">
-                  <Loader2 className="w-6 h-6 animate-spin text-yellow-500" />
+                  <Loader2 className="w-6 h-6 animate-spin text-[var(--ocean)]" />
                 </div>
               ) : isError ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">

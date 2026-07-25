@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { formsApi } from "@/lib/api-client";
 import type { Form } from "@/types";
@@ -21,20 +21,19 @@ export default function FormEmbedPage() {
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState<string | null>(null);
 
-  const loadForm = useCallback(async () => {
-    try {
-      const data = await formsApi.get(formId);
-      setForm(data);
-    } catch {
-      toast.error("Failed to load form");
-    } finally {
-      setLoading(false);
-    }
-  }, [formId]);
-
   useEffect(() => {
-    loadForm();
-  }, [formId, loadForm]);
+    const load = async () => {
+      try {
+        const data = await formsApi.get(formId);
+        setForm(data);
+      } catch {
+        toast.error("Failed to load form");
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, [formId]);
 
   const hostedUrl = form ? `${window.location.origin}/form/${form.slug}` : "";
   
@@ -284,8 +283,8 @@ export default function MyFormComponent() {
                 </div>
               </div>
 
-              <div className="bg-purple-50 border border-purple-200 rounded-md p-4">
-                <p className="text-sm text-purple-900">
+              <div className="bg-[var(--sea-light)]/60 border border-[var(--ocean)]/20 rounded-md p-4">
+                <p className="text-sm text-[var(--ocean-deep)]">
                   <strong>Use Case:</strong> Perfect for newsletter signups, contact forms, or lead generation without leaving the page.
                 </p>
               </div>

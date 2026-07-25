@@ -5,6 +5,12 @@ Generates concise summaries and synthesizes information from multiple sources
 import os
 from typing import List, Dict, Optional
 
+ALLOW_MOCK_SEARCH = os.getenv("ALLOW_MOCK_SEARCH", "False").lower() in ("1", "true", "yes")
+
+
+class SummarizationError(Exception):
+    """Raised when answer generation fails and mocks are disabled."""
+
 
 class AnswerSummarizer:
     """
@@ -36,12 +42,16 @@ class AnswerSummarizer:
             Dictionary with answer, confidence, and metadata
         """
         if not self.llm:
-            return self._mock_summary(query, context, sources)
-        
+            if ALLOW_MOCK_SEARCH:
+                mock = self._mock_summary(query, context, sources)
+                mock["degraded"] = True
+                mock["degraded_reason"] = "missing_llm"
+                return mock
+            raise SummarizationError(
+                "No LLM configured. Set OPENAI_API_KEY / GROQ_API_KEY or ALLOW_MOCK_SEARCH=true."
+            )
+
         try:
-            # Use provided context
-            
-            # Create system prompt based on search mode
             mode_instructions = {
                 "text": "Provide a comprehensive, general-purpose answer.",
                 "academic": "Focus on peer-reviewed sources, cite methodologies, and use formal academic language. Prioritize research papers and scholarly articles.",
@@ -62,13 +72,13 @@ GUIDELINES:
 2. Be concise yet comprehensive
 3. Use markdown formatting for readability
 4. Include specific facts and data when available
-5. Cite sources using [1], [2], etc. notation
+5. Cite sources using [1], [2], etc. notation matching the numbered sources below
 6. Admit uncertainty when sources conflict or lack information
 7. Focus on the most relevant and recent information
+8. Prefer citing higher-quality sources when claims overlap
 
 Always prioritize accuracy and cite your sources."""
 
-            # Build user message
             user_message = f"""Query: {query}
 
 Sources:
@@ -76,28 +86,36 @@ Sources:
 
 Please provide a comprehensive answer to the query based on the sources above. Use inline citations like [1], [2] to reference specific sources."""
 
-            # Add conversation history if provided
             messages = [{"role": "system", "content": system_prompt}]
-            
+
             if conversation_history:
                 messages.extend(conversation_history)
-            
+
             messages.append({"role": "user", "content": user_message})
-            
-            # Generate response
+
             response = await self.llm.ainvoke(messages)
-            
             answer = response.content
-            
+
             return {
-                'answer': answer,
-                'model_used': self.model,
-                'tokens_used': getattr(response, 'usage', {}).get('total_tokens', 0) if hasattr(response, 'usage') else 0
+                "answer": answer,
+                "model_used": self.model,
+                "tokens_used": getattr(response, "usage", {}).get("total_tokens", 0)
+                if hasattr(response, "usage")
+                else 0,
+                "degraded": False,
+                "degraded_reason": None,
             }
-            
+
+        except SummarizationError:
+            raise
         except Exception as e:
-            print(f"Error in summarization: {str(e)}")
-            return self._mock_summary(query, context, sources)
+            print(f"Error in summarization: {e}")
+            if ALLOW_MOCK_SEARCH:
+                mock = self._mock_summary(query, context, sources)
+                mock["degraded"] = True
+                mock["degraded_reason"] = "llm_error"
+                return mock
+            raise SummarizationError(f"Answer generation failed: {e}") from e
     
     async def generate_followups(self, query: str, answer: str) -> List[str]:
         """
@@ -111,8 +129,8 @@ Please provide a comprehensive answer to the query based on the sources above. U
             List of suggested follow-up questions
         """
         if not self.llm:
-            return self._mock_followups(query)
-        
+            return self._mock_followups(query) if ALLOW_MOCK_SEARCH else []
+
         try:
             prompt = f"""Based on this query and answer, suggest 3 relevant follow-up questions that a user might ask next.
 
@@ -123,17 +141,19 @@ Answer: {answer}
 Generate exactly 3 short, specific follow-up questions (one per line, no numbering):"""
 
             response = await self.llm.ainvoke([{"role": "user", "content": prompt}])
-            
-            followups = response.content.strip().split('\n')
-            # Clean up and limit to 3
-            followups = [q.strip().lstrip('- ').lstrip('• ').lstrip('* ') 
-                        for q in followups if q.strip()][:3]
-            
+
+            followups = response.content.strip().split("\n")
+            followups = [
+                q.strip().lstrip("- ").lstrip("• ").lstrip("* ")
+                for q in followups
+                if q.strip()
+            ][:3]
+
             return followups
-            
+
         except Exception as e:
-            print(f"Error generating follow-ups: {str(e)}")
-            return self._mock_followups(query)
+            print(f"Error generating follow-ups: {e}")
+            return self._mock_followups(query) if ALLOW_MOCK_SEARCH else []
     
     def _build_context(self, sources: List[Dict]) -> str:
         """Build formatted context from sources"""

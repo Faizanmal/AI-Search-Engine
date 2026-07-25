@@ -11,8 +11,8 @@ export const textVariants = cva(
         secondary: "text-secondary-foreground",
         accent: "text-accent-foreground",
         destructive: "text-destructive",
-        gradient: "bg-linear-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent",
-        "gradient-secondary": "bg-linear-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent",
+        gradient: "bg-linear-to-r from-[var(--ocean-deep)] to-[var(--ocean)] bg-clip-text text-transparent",
+        "gradient-secondary": "bg-linear-to-r from-[var(--signal)] to-[#e87a3a] bg-clip-text text-transparent",
       },
       size: {
         xs: "text-xs",

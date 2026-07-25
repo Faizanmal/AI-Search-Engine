@@ -5,7 +5,6 @@ Production-grade sanitisation that strips dangerous HTML / script payloads
 while still allowing plain-text searches.
 """
 
-import html
 import re
 from typing import Optional
 
@@ -29,9 +28,11 @@ def sanitize_query(raw_input: str, max_length: int = 1000) -> str:
         1. Strip leading/trailing whitespace
         2. Remove control characters
         3. Strip embedded script tags and HTML
-        4. Escape any remaining HTML entities
-        5. Collapse excess whitespace
-        6. Enforce max length
+        4. Collapse excess whitespace
+        5. Enforce max length
+
+    Note: Do not html.escape — that turns "&" into "&amp;" and hurts retrieval.
+    HTML is already stripped; escaping is for display, not search queries.
 
     Args:
         raw_input: The raw query string from the user.
@@ -47,7 +48,6 @@ def sanitize_query(raw_input: str, max_length: int = 1000) -> str:
     text = _CONTROL_CHARS_RE.sub("", text)
     text = _SCRIPT_TAG_RE.sub("", text)
     text = _HTML_TAG_RE.sub("", text)
-    text = html.escape(text, quote=True)
     text = _EXCESS_WHITESPACE_RE.sub(" ", text).strip()
     return text[:max_length]
 

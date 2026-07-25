@@ -28,14 +28,14 @@ interface TagInputProps {
 }
 
 const TAG_COLORS = [
-  '#3b82f6', // blue
-  '#10b981', // green
+  '#176b86', // ocean
+  '#1f8a5c', // green
   '#f59e0b', // amber
   '#ef4444', // red
-  '#8b5cf6', // purple
-  '#ec4899', // pink
+  '#0e4f66', // ocean deep
+  '#f05a2b', // signal
   '#14b8a6', // teal
-  '#f97316', // orange
+  '#243447', // ink soft
 ];
 
 export function TagInput({ selectedTags, onChange, availableTags = [], className }: TagInputProps) {
@@ -83,7 +83,7 @@ export function TagInput({ selectedTags, onChange, availableTags = [], className
       <div
         className={cn(
           'min-h-12 p-2 flex flex-wrap gap-2 items-center rounded-xl border bg-background/50 backdrop-blur-md transition-all duration-300',
-          isFocused ? 'ring-2 ring-purple-500/50 border-purple-500/50 shadow-[0_0_15px_rgba(168,85,247,0.2)]' : 'border-border/50 hover:border-purple-500/30'
+          isFocused ? 'ring-2 ring-[var(--ocean)]/40 border-[var(--ocean)]/40 shadow-[var(--shadow-sm)]' : 'border-border/50 hover:border-[var(--ocean)]/30'
         )}
       >
         <AnimatePresence>
@@ -144,7 +144,7 @@ export function TagInput({ selectedTags, onChange, availableTags = [], className
               size="sm"
               className={cn(
                 "h-7 px-3 gap-1.5 rounded-full font-medium ml-auto transition-all duration-300",
-                open ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300" : "hover:bg-purple-50 dark:hover:bg-purple-900/20 text-muted-foreground hover:text-foreground"
+                open ? "bg-[var(--sea-light)] text-[var(--ocean-deep)]" : "hover:bg-[var(--sea-light)]/50 text-muted-foreground hover:text-foreground"
               )}
             >
               <Plus className="h-3.5 w-3.5" />
@@ -152,17 +152,17 @@ export function TagInput({ selectedTags, onChange, availableTags = [], className
             </Button>
           </PopoverTrigger>
           <PopoverContent
-            className="w-80 p-0 overflow-hidden rounded-2xl border border-purple-500/20 shadow-2xl backdrop-blur-xl bg-background/95"
+            className="w-80 p-0 overflow-hidden rounded-xl border border-[var(--surface-border)] shadow-[var(--shadow-lg)] bg-[var(--paper)]"
             align="end"
             sideOffset={8}
           >
-            <div className="absolute inset-0 bg-linear-to-br from-purple-500/5 via-transparent to-blue-500/5 pointer-events-none" />
+            <div className="absolute inset-0 bg-[var(--ocean)]/5 pointer-events-none" />
             
             <div className="relative p-4 space-y-4">
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
-                  <TagIcon className="w-4 h-4 text-purple-500" />
-                  <h4 className="font-semibold text-sm tracking-tight bg-clip-text text-transparent bg-linear-to-r from-purple-600 to-blue-600">Select Existing Tags</h4>
+                  <TagIcon className="w-4 h-4 text-[var(--ocean)]" />
+                  <h4 className="font-semibold text-sm tracking-tight text-[var(--ink)]">Select Existing Tags</h4>
                 </div>
                 
                 <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
@@ -216,11 +216,11 @@ export function TagInput({ selectedTags, onChange, availableTags = [], className
                         handleCreateTag();
                       }
                     }}
-                    className="flex-1 h-9 bg-background/50 border-border/60 focus:ring-purple-500/50 rounded-lg text-sm transition-all"
+                    className="flex-1 h-9 bg-background/50 border-border/60 focus:ring-[var(--ocean)]/40 rounded-lg text-sm transition-all"
                   />
                   <Button
                     size="sm"
-                    className="h-9 px-4 bg-linear-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-md hover:shadow-lg transition-all rounded-lg font-medium"
+                    className="h-9 px-4 bg-[var(--ocean-deep)] hover:bg-[var(--ocean)] text-white shadow-[var(--shadow-sm)] transition-all rounded-lg font-medium"
                     onClick={handleCreateTag}
                     disabled={!newTagName.trim()}
                   >

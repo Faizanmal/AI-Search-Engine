@@ -53,7 +53,7 @@ import {
 } from 'recharts';
 
 // Pie colours
-const MODE_COLORS = ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444'];
+const MODE_COLORS = ['#176b86', '#0e4f66', '#1f8a5c', '#f05a2b', '#243447'];
 
 // ---------------------------------------------------------------------------
 // Stat Card
@@ -74,18 +74,18 @@ function StatCard({ title, value, subtitle, icon: Icon, gradient, delay }: StatC
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.4 }}
     >
-      <Card className="glass border-white/30 hover:shadow-xl transition-all">
+      <Card className="bg-[var(--paper)]/90 border-[var(--surface-border)] hover:shadow-[var(--shadow-md)] transition-all rounded-xl">
         <CardContent className="p-6">
           <div className="flex items-start justify-between">
             <div className="space-y-2">
               <p className="text-sm text-muted-foreground font-medium">{title}</p>
-              <p className="text-3xl font-bold tracking-tight">{value}</p>
+              <p className="font-display text-3xl font-bold tracking-tight">{value}</p>
               {subtitle && (
                 <p className="text-xs text-muted-foreground">{subtitle}</p>
               )}
             </div>
             <div
-              className={`p-3 rounded-xl bg-linear-to-br ${gradient} shadow-lg flex-shrink-0`}
+              className={`p-3 rounded-lg bg-linear-to-br ${gradient} shadow-[var(--shadow-sm)] flex-shrink-0`}
             >
               <Icon className="w-5 h-5 text-white" />
             </div>
@@ -104,15 +104,15 @@ export default function AnalyticsPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
+      <div className="min-h-screen flex items-center justify-center app-atmosphere">
+        <Loader2 className="w-8 h-8 animate-spin text-[var(--ocean)]" />
       </div>
     );
   }
 
   if (isError) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center text-center px-4">
+      <div className="min-h-screen flex flex-col items-center justify-center text-center px-4 app-atmosphere">
         <AlertCircle className="w-12 h-12 text-destructive mb-4" />
         <h1 className="text-xl font-semibold mb-2">Failed to load analytics</h1>
         <p className="text-muted-foreground">
@@ -133,19 +133,19 @@ export default function AnalyticsPage() {
     : [];
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-slate-50 via-blue-50 to-purple-50 dark:from-slate-950 dark:via-blue-950 dark:to-purple-950">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen app-atmosphere">
+      <div className="page-shell-inner">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <h1 className="text-3xl font-bold bg-linear-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent flex items-center gap-3">
-            <BarChart3 className="w-8 h-8 text-purple-600" />
-            Analytics Dashboard
+          <h1 className="page-title flex items-center gap-3">
+            <BarChart3 className="w-7 h-7 text-[var(--ocean)]" />
+            Analytics
           </h1>
-          <p className="text-muted-foreground mt-2">
+          <p className="page-subtitle">
             Insights into your search activity and usage patterns.
           </p>
         </motion.div>
@@ -156,14 +156,14 @@ export default function AnalyticsPage() {
             title="Total Searches"
             value={analytics.total_queries}
             icon={Search}
-            gradient="from-purple-500 to-pink-500"
+            gradient="from-[var(--ocean)] to-[var(--ocean-deep)]"
             delay={0.1}
           />
           <StatCard
             title="Bookmarks"
             value={analytics.total_bookmarks}
             icon={Bookmark}
-            gradient="from-yellow-500 to-orange-500"
+            gradient="from-amber-500 to-[var(--signal)]"
             delay={0.2}
           />
           <StatCard
@@ -177,7 +177,7 @@ export default function AnalyticsPage() {
                   : 'Low confidence'
             }
             icon={Shield}
-            gradient="from-green-500 to-emerald-500"
+            gradient="from-emerald-600 to-emerald-500"
             delay={0.3}
           />
           <StatCard
@@ -188,7 +188,7 @@ export default function AnalyticsPage() {
                 : `${Math.round(analytics.avg_response_time_ms)}ms`
             }
             icon={Clock}
-            gradient="from-blue-500 to-cyan-500"
+            gradient="from-[var(--ocean)] to-[var(--ocean-deep)]"
             delay={0.4}
           />
         </div>
@@ -199,21 +199,21 @@ export default function AnalyticsPage() {
             title="Avg Sources / Query"
             value={analytics.avg_sources_per_query?.toFixed(1) ?? '—'}
             icon={FileSearch}
-            gradient="from-indigo-500 to-violet-500"
+            gradient="from-[var(--ocean)] to-[var(--sea-light)]"
             delay={0.45}
           />
           <StatCard
             title="Fact Checks"
             value={analytics.fact_check_count ?? 0}
             icon={CheckCircle}
-            gradient="from-teal-500 to-green-500"
+            gradient="from-emerald-600 to-emerald-500"
             delay={0.5}
           />
           <StatCard
             title="Queries Today"
             value={analytics.queries_today}
             icon={Calendar}
-            gradient="from-rose-500 to-pink-500"
+            gradient="from-[var(--signal)] to-[var(--signal-deep)]"
             delay={0.55}
           />
         </div>
@@ -227,10 +227,10 @@ export default function AnalyticsPage() {
             transition={{ delay: 0.6 }}
             className="lg:col-span-2"
           >
-            <Card className="glass border-white/30">
+            <Card className="bg-[var(--paper)]/90 border-[var(--surface-border)] rounded-xl shadow-[var(--shadow-sm)]">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-purple-600" />
+                  <TrendingUp className="w-5 h-5 text-[var(--ocean)]" />
                   Search Volume (14 Days)
                 </CardTitle>
               </CardHeader>
@@ -240,8 +240,8 @@ export default function AnalyticsPage() {
                     <AreaChart data={analytics.daily_volume}>
                       <defs>
                         <linearGradient id="colorVol" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3} />
-                          <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
+                          <stop offset="5%" stopColor="#176b86" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="#176b86" stopOpacity={0} />
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
@@ -251,7 +251,7 @@ export default function AnalyticsPage() {
                       <Area
                         type="monotone"
                         dataKey="count"
-                        stroke="#8b5cf6"
+                        stroke="#176b86"
                         fillOpacity={1}
                         fill="url(#colorVol)"
                         name="Queries"
@@ -259,7 +259,7 @@ export default function AnalyticsPage() {
                       <Area
                         type="monotone"
                         dataKey="avg_trust"
-                        stroke="#10b981"
+                        stroke="#1f8a5c"
                         fillOpacity={0}
                         name="Avg Trust"
                       />
@@ -280,10 +280,10 @@ export default function AnalyticsPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.65 }}
           >
-            <Card className="glass border-white/30 h-full">
+            <Card className="bg-[var(--paper)]/90 border-[var(--surface-border)] rounded-xl shadow-[var(--shadow-sm)] h-full">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Layers className="w-5 h-5 text-purple-600" />
+                  <Layers className="w-5 h-5 text-[var(--ocean)]" />
                   Search Modes
                 </CardTitle>
               </CardHeader>
@@ -331,10 +331,10 @@ export default function AnalyticsPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.7 }}
           >
-            <Card className="glass border-white/30 h-full">
+            <Card className="bg-[var(--paper)]/90 border-[var(--surface-border)] rounded-xl shadow-[var(--shadow-sm)] h-full">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Globe className="w-5 h-5 text-purple-600" />
+                  <Globe className="w-5 h-5 text-[var(--ocean)]" />
                   Top Domains
                 </CardTitle>
                 <CardDescription>Most cited source domains</CardDescription>
@@ -355,7 +355,7 @@ export default function AnalyticsPage() {
                         width={100}
                       />
                       <RTooltip />
-                      <Bar dataKey="count" fill="#8b5cf6" radius={[0, 4, 4, 0]} />
+                      <Bar dataKey="count" fill="#176b86" radius={[0, 4, 4, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
@@ -373,10 +373,10 @@ export default function AnalyticsPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.75 }}
           >
-            <Card className="glass border-white/30 h-full">
+            <Card className="bg-[var(--paper)]/90 border-[var(--surface-border)] rounded-xl shadow-[var(--shadow-sm)] h-full">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Calendar className="w-5 h-5 text-purple-600" />
+                  <Calendar className="w-5 h-5 text-[var(--ocean)]" />
                   Activity
                 </CardTitle>
                 <CardDescription>Your recent search activity</CardDescription>
@@ -421,10 +421,10 @@ export default function AnalyticsPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.8 }}
           >
-            <Card className="glass border-white/30 h-full">
+            <Card className="bg-[var(--paper)]/90 border-[var(--surface-border)] rounded-xl shadow-[var(--shadow-sm)] h-full">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-purple-600" />
+                  <TrendingUp className="w-5 h-5 text-[var(--ocean)]" />
                   Top Queries
                 </CardTitle>
                 <CardDescription>Most frequently searched topics</CardDescription>
@@ -449,12 +449,12 @@ export default function AnalyticsPage() {
                               {entry.count}×
                             </Badge>
                           </div>
-                          <div className="h-2 bg-accent rounded-full overflow-hidden">
+                          <div className="h-2 bg-muted rounded-lg overflow-hidden">
                             <motion.div
                               initial={{ width: 0 }}
                               animate={{ width: `${widthPct}%` }}
                               transition={{ delay: 0.9 + idx * 0.05, duration: 0.5 }}
-                              className="h-full bg-linear-to-r from-purple-500 to-blue-500 rounded-full"
+                              className="h-full bg-[var(--ocean)] rounded-lg"
                             />
                           </div>
                         </div>

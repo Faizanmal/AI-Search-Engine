@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { formsApi, templatesApi } from "@/lib/api-client";
 import type { FormTemplate } from "@/types";
@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import { Sparkles, FileText, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -18,7 +19,22 @@ export default function NewFormPage() {
   const [loading, setLoading] = useState(false);
   const [prompt, setPrompt] = useState("");
   const [context, setContext] = useState("");
-  const [templates] = useState<FormTemplate[]>([]);
+  const [templates, setTemplates] = useState<FormTemplate[]>([]);
+  const [templatesLoading, setTemplatesLoading] = useState(true);
+
+  useEffect(() => {
+    const loadTemplates = async () => {
+      try {
+        const data = await templatesApi.list();
+        setTemplates(data);
+      } catch {
+        // Templates are optional — keep empty state on failure
+      } finally {
+        setTemplatesLoading(false);
+      }
+    };
+    loadTemplates();
+  }, []);
 
   const handleGenerateForm = async () => {
     if (!prompt.trim()) {
@@ -181,7 +197,11 @@ export default function NewFormPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {templates.length === 0 ? (
+              {templatesLoading ? (
+                <div className="flex justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+              ) : templates.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <FileText className="mx-auto h-12 w-12 mb-4 opacity-50" />
                   <p>No templates available yet</p>
@@ -190,17 +210,28 @@ export default function NewFormPage() {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {templates.map((template) => (
-                    <Card key={template.id} className="cursor-pointer hover:shadow-md transition-shadow">
+                    <Card key={template.id} className="hover:shadow-md transition-shadow">
                       <CardHeader>
-                        <CardTitle className="text-lg">{template.name}</CardTitle>
+                        <div className="flex items-start justify-between gap-2">
+                          <CardTitle className="text-lg">{template.name}</CardTitle>
+                          {template.is_featured && (
+                            <Badge variant="secondary" className="text-xs">Featured</Badge>
+                          )}
+                        </div>
                         <CardDescription>{template.description}</CardDescription>
                       </CardHeader>
                       <CardContent>
+                        <p className="text-xs text-muted-foreground mb-3 capitalize">
+                          {template.category.replace("_", " ")} · used {template.usage_count}×
+                        </p>
                         <Button
                           onClick={() => handleUseTemplate(template.id)}
                           disabled={loading}
                           className="w-full"
                         >
+                          {loading ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          ) : null}
                           Use Template
                         </Button>
                       </CardContent>

@@ -8,8 +8,8 @@ export const sectionVariants = cva(
         default: "",
         hero: "relative overflow-hidden",
         feature: "relative",
-        testimonial: "relative bg-linear-to-br from-purple-50 to-blue-50 dark:from-purple-950/30 dark:to-blue-950/30",
-        cta: "relative bg-linear-to-r from-purple-600/10 via-blue-600/10 to-pink-600/10",
+        testimonial: "relative bg-[var(--sea-light)]/40",
+        cta: "relative bg-[var(--ocean)]/5",
       },
       spacing: {
         none: "",
@@ -23,7 +23,7 @@ export const sectionVariants = cva(
         primary: "bg-background",
         secondary: "bg-secondary/30",
         muted: "bg-muted/30",
-        gradient: "bg-linear-to-br from-slate-50 via-blue-50 to-purple-50 dark:from-slate-950 dark:via-blue-950 dark:to-purple-950",
+        gradient: "app-atmosphere",
       },
     },
     defaultVariants: {

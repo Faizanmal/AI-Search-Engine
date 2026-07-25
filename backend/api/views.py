@@ -79,7 +79,6 @@ from .models import (
     Bookmark,
     CollectionComment,
     FactCheck,
-    Form,
     Plugin,
     SearchCollection,
     SearchQuery,
@@ -89,6 +88,9 @@ from .models import (
     UserPreference,
 )
 from .rag_pipeline import RAGPipeline
+from .utils.api_keys import authenticate_api_key
+from .utils.plugins import apply_plugins_to_options
+from .utils.query_cache import build_cache_key, get_cached_result, set_cached_result
 from .serializers import (
     AlertNotificationSerializer,
     AnalyticsSummarySerializer,
@@ -103,7 +105,6 @@ from .serializers import (
     ExportRequestSerializer,
     FactCheckRequestSerializer,
     FactCheckSerializer,
-    FormSerializer,
     LoginSerializer,
     PluginInstallSerializer,
     PluginSerializer,
@@ -183,24 +184,102 @@ class QueryView(APIView):
 
     @extend_schema(request=QuerySerializer, responses={200: QueryResponseSerializer})
     def post(self, request):
+        api_key, key_error = authenticate_api_key(request)
+        if key_error:
+            return Response(
+                {"error": key_error, "retry_after": 86400},
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
+            )
+
         serializer = QuerySerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         query = serializer.validated_data["query"]
         search_mode = serializer.validated_data.get("search_mode", "text")
+        max_sources = serializer.validated_data.get("max_sources", 10)
+        source_types = serializer.validated_data.get("source_types") or []
         enable_fact_check = serializer.validated_data.get("enable_fact_check", False)
+        conversation_history = serializer.validated_data.get("conversation_history") or []
+        enable_followups = True
         start = time.time()
+
+        # Merge authenticated user preferences when the client omitted overrides
+        user = request.user if request.user.is_authenticated else None
+        if api_key and not user:
+            user = api_key.user
+        if user and user.is_authenticated:
+            prefs, _ = UserPreference.objects.get_or_create(user=user)
+            if "search_mode" not in request.data:
+                search_mode = prefs.default_search_mode or search_mode
+            if "max_sources" not in request.data:
+                max_sources = prefs.default_max_sources or max_sources
+            if "source_types" not in request.data and prefs.preferred_source_types:
+                source_types = list(prefs.preferred_source_types)
+            if "enable_fact_check" not in request.data:
+                enable_fact_check = bool(prefs.enable_fact_checking)
+            enable_followups = bool(prefs.enable_auto_followups)
+
+        plugin_opts = apply_plugins_to_options(
+            user=user,
+            search_mode=search_mode,
+            source_types=source_types,
+            max_sources=max_sources,
+            enable_fact_check=enable_fact_check,
+        )
+        search_mode = plugin_opts["search_mode"]
+        source_types = plugin_opts["source_types"]
+        max_sources = plugin_opts["max_sources"]
+        enable_fact_check = plugin_opts["enable_fact_check"]
+        dedupe_citations = plugin_opts["dedupe_citations"]
+        active_plugins = plugin_opts["active_plugins"]
+
+        cache_key = build_cache_key(
+            query=query,
+            search_mode=search_mode,
+            max_sources=max_sources,
+            source_types=source_types,
+            enable_fact_check=enable_fact_check,
+            conversation_history=conversation_history,
+            plugins=active_plugins,
+        )
+        cached = get_cached_result(cache_key)
 
         try:
             pipeline = _get_pipeline()
-            result = asyncio.run(pipeline.process_query(query, search_mode=search_mode))
-            elapsed_ms = int((time.time() - start) * 1000)
 
-            # Auto-generate tags from query
+            if cached:
+                result = dict(cached)
+                fact_check_result = result.get("fact_check_result") or {}
+                result["cached"] = True
+                elapsed_ms = int((time.time() - start) * 1000)
+            else:
+
+                async def _run():
+                    result = await pipeline.process_query(
+                        query,
+                        search_mode=search_mode,
+                        max_sources=max_sources,
+                        source_types=source_types,
+                        enable_followups=enable_followups,
+                        conversation_history=conversation_history,
+                        dedupe_citations=dedupe_citations,
+                    )
+                    fact_check_result = {}
+                    if enable_fact_check:
+                        fact_check_result = await pipeline.fact_check_answer(
+                            query, result.get("answer", ""), result.get("sources", [])
+                        )
+                    return result, fact_check_result
+
+                result, fact_check_result = asyncio.run(_run())
+                result["fact_check_result"] = fact_check_result
+                result["cached"] = False
+                set_cached_result(cache_key, result)
+                elapsed_ms = int((time.time() - start) * 1000)
+
             tags = _extract_tags(query)
 
-            # Persist to history
             sq = SearchQuery.objects.create(
                 query=query,
                 answer=result.get("answer", ""),
@@ -211,30 +290,38 @@ class QueryView(APIView):
                 response_time_ms=elapsed_ms,
                 search_mode=search_mode,
                 tags=tags,
-                user=request.user if request.user.is_authenticated else None,
+                user=user if user and user.is_authenticated else None,
                 session_key=_get_session_key(request),
+                fact_checked=bool(fact_check_result),
+                fact_check_result=fact_check_result or {},
             )
-
-            # Run fact-check if requested
-            fact_check_result = {}
-            if enable_fact_check:
-                fact_check_result = asyncio.run(
-                    pipeline.fact_check_answer(query, result.get("answer", ""), result.get("sources", []))
-                )
-                sq.fact_checked = True
-                sq.fact_check_result = fact_check_result
-                sq.save(update_fields=["fact_checked", "fact_check_result"])
 
             result["query_id"] = str(sq.id)
             result["response_time_ms"] = elapsed_ms
             result["search_mode"] = search_mode
             result["tags"] = tags
             result["fact_check_result"] = fact_check_result
+            result["degraded"] = bool(result.get("degraded", False))
+            result["degraded_reason"] = result.get("degraded_reason")
+            result["active_plugins"] = active_plugins
 
             response_serializer = QueryResponseSerializer(data=result)
             if response_serializer.is_valid():
-                logger.info("Query processed in %dms: %s", elapsed_ms, query[:80])
-                return Response(response_serializer.data, status=status.HTTP_200_OK)
+                logger.info(
+                    "Query processed in %dms%s: %s",
+                    elapsed_ms,
+                    " (cached)" if result.get("cached") else "",
+                    query[:80],
+                )
+                response = Response(response_serializer.data, status=status.HTTP_200_OK)
+                if api_key:
+                    response["X-RateLimit-Limit"] = str(api_key.daily_limit)
+                    response["X-RateLimit-Remaining"] = str(api_key.remaining_today)
+                if result.get("cached"):
+                    response["X-Cache"] = "HIT"
+                else:
+                    response["X-Cache"] = "MISS"
+                return response
 
             return Response(
                 {"error": "Invalid response format", "details": response_serializer.errors},
@@ -254,26 +341,141 @@ class StreamQueryView(View):
     """SSE streaming version of QueryView."""
 
     async def post(self, request):
+        from asgiref.sync import sync_to_async
+        from .utils.sanitizer import sanitize_query
+
+        api_key, key_error = await sync_to_async(authenticate_api_key)(request)
+        if key_error:
+            return JsonResponse(
+                {"error": key_error, "retry_after": 86400},
+                status=429,
+            )
+
         try:
             body = json.loads(request.body)
         except (json.JSONDecodeError, TypeError):
             return JsonResponse({"error": "Invalid JSON body"}, status=400)
 
-        query = body.get("query", "").strip()
+        query = sanitize_query(body.get("query", ""))
         if not query:
             return JsonResponse({"error": "Query is required"}, status=400)
 
+        search_mode = body.get("search_mode", "text")
+        max_sources = int(body.get("max_sources", 10) or 10)
+        source_types = body.get("source_types") or []
+        enable_followups = body.get("enable_followups", True)
+        enable_fact_check = bool(body.get("enable_fact_check", False))
+        raw_history = body.get("conversation_history") or []
+        conversation_history = []
+        for turn in raw_history[-6:]:
+            if isinstance(turn, dict):
+                role = turn.get("role")
+                content = (turn.get("content") or "").strip()
+                if role in ("user", "assistant") and content:
+                    conversation_history.append({"role": role, "content": content[:2000]})
+
+        def _resolve_user_and_plugins():
+            user = None
+            if api_key:
+                user = api_key.user
+            elif hasattr(request, "user") and getattr(request.user, "is_authenticated", False):
+                user = request.user
+            opts = apply_plugins_to_options(
+                user=user,
+                search_mode=search_mode,
+                source_types=source_types,
+                max_sources=max_sources,
+                enable_fact_check=enable_fact_check,
+            )
+            return user, opts
+
+        user, plugin_opts = await sync_to_async(_resolve_user_and_plugins)()
+        search_mode = plugin_opts["search_mode"]
+        source_types = plugin_opts["source_types"]
+        max_sources = plugin_opts["max_sources"]
+        dedupe_citations = plugin_opts["dedupe_citations"]
+        active_plugins = plugin_opts["active_plugins"]
+
+        start = time.time()
         pipeline = _get_pipeline()
 
         async def event_stream():
+            full_answer = ""
+            sources = []
+            trust_score = 0
+            followups = []
+            degraded = False
+            degraded_reason = None
             try:
-                async for event in pipeline.process_query_stream(query):
+                async for event in pipeline.process_query_stream(
+                    query,
+                    search_mode=search_mode,
+                    max_sources=max_sources,
+                    source_types=source_types,
+                    enable_followups=bool(enable_followups),
+                    conversation_history=conversation_history,
+                    dedupe_citations=dedupe_citations,
+                ):
+                    etype = event.get("type")
+                    data = event.get("data")
+                    if etype == "sources":
+                        sources = data or []
+                    elif etype == "answer_chunk":
+                        full_answer += data or ""
+                    elif etype == "metadata" and isinstance(data, dict):
+                        trust_score = data.get("trust_score", 0)
+                        followups = data.get("followups") or []
+                        degraded = bool(data.get("degraded", False))
+                        degraded_reason = data.get("degraded_reason")
                     yield f"data: {json.dumps(event)}\n\n"
+
+                elapsed_ms = int((time.time() - start) * 1000)
+                tags = _extract_tags(query)
+
+                def _persist():
+                    return SearchQuery.objects.create(
+                        query=query,
+                        answer=full_answer,
+                        trust_score=trust_score,
+                        sources=sources,
+                        followups=followups,
+                        response_time_ms=elapsed_ms,
+                        search_mode=search_mode,
+                        tags=tags,
+                        user=user,
+                        session_key=request.COOKIES.get("sessionid", "")[:40],
+                    )
+
+                sq = await sync_to_async(_persist)()
+                yield (
+                    "data: "
+                    + json.dumps(
+                        {
+                            "type": "done",
+                            "data": {
+                                "query_id": str(sq.id),
+                                "response_time_ms": elapsed_ms,
+                                "search_mode": search_mode,
+                                "tags": tags,
+                                "trust_score": trust_score,
+                                "followups": followups,
+                                "sources": sources,
+                                "degraded": degraded,
+                                "degraded_reason": degraded_reason,
+                                "active_plugins": active_plugins,
+                            },
+                        }
+                    )
+                    + "\n\n"
+                )
             except Exception as exc:
                 logger.exception("Stream query error")
                 yield f'data: {json.dumps({"type": "error", "data": str(exc)})}\n\n'
 
-        return StreamingHttpResponse(event_stream(), content_type="text/event-stream")
+        response = StreamingHttpResponse(event_stream(), content_type="text/event-stream")
+        response["Cache-Control"] = "no-cache"
+        response["X-Accel-Buffering"] = "no"
+        return response
 
 
 @extend_schema(tags=["Search"])
@@ -851,23 +1053,6 @@ class RefreshTokenView(APIView):
             })
         except Exception as exc:
             return Response({"error": str(exc)}, status=status.HTTP_401_UNAUTHORIZED)
-
-
-# ===================================================================
-# Forms (existing)
-# ===================================================================
-
-
-@extend_schema(tags=["Search"])
-class FormListView(APIView):
-    """List forms for authenticated user."""
-
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        forms = Form.objects.filter(user=request.user)
-        serializer = FormSerializer(forms, many=True)
-        return Response(serializer.data)
 
 
 # ===================================================================

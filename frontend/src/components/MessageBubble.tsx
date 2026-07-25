@@ -33,6 +33,8 @@ import {
   Pencil,
   X,
   Clock,
+  ShieldCheck,
+  AlertTriangle,
 } from 'lucide-react';
 import { CitationCard } from './CitationCard';
 import { TrustMeter } from './TrustMeter';
@@ -40,12 +42,14 @@ import { FollowUps } from './FollowUps';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import type { Components } from 'react-markdown';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { Badge } from '@/components/ui/badge';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -63,6 +67,78 @@ interface MessageBubbleProps {
 function formatResponseTime(ms?: number): string | null {
   if (!ms) return null;
   return ms >= 1000 ? `${(ms / 1000).toFixed(1)}s` : `${ms}ms`;
+}
+
+const VERDICT_STYLES: Record<string, string> = {
+  true: 'bg-emerald-100 text-emerald-800',
+  mostly_true: 'bg-emerald-50 text-emerald-700',
+  mixed: 'bg-amber-100 text-amber-800',
+  mostly_false: 'bg-orange-100 text-orange-800',
+  false: 'bg-red-100 text-red-800',
+  unverifiable: 'bg-slate-100 text-slate-700',
+};
+
+function renderTextWithCitations(text: string): React.ReactNode[] {
+  const parts = text.split(/(\[\d+\])/g);
+  return parts.map((part, i) => {
+    const match = part.match(/^\[(\d+)\]$/);
+    if (!match) return <React.Fragment key={i}>{part}</React.Fragment>;
+    const n = match[1];
+    return (
+      <a
+        key={i}
+        href={`#source-${n}`}
+        className="inline-flex items-center justify-center mx-0.5 px-1.5 py-0.5 text-[11px] font-semibold rounded-md bg-[var(--sea-light)] text-[var(--ocean-deep)] hover:bg-[var(--ocean)] hover:text-white no-underline align-super"
+        onClick={(e) => {
+          e.preventDefault();
+          document.getElementById(`source-${n}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }}
+      >
+        {n}
+      </a>
+    );
+  });
+}
+
+function markdownComponents(): Components {
+  return {
+    h1: ({ ...props }) => <h1 className="text-2xl font-bold mb-4" {...props} />,
+    h2: ({ ...props }) => <h2 className="text-xl font-semibold mb-3" {...props} />,
+    h3: ({ ...props }) => <h3 className="text-lg font-medium mb-2" {...props} />,
+    p: ({ children, ...props }) => (
+      <p className="mb-3 leading-relaxed" {...props}>
+        {React.Children.map(children, (child) =>
+          typeof child === 'string' ? renderTextWithCitations(child) : child,
+        )}
+      </p>
+    ),
+    li: ({ children, ...props }) => (
+      <li {...props}>
+        {React.Children.map(children, (child) =>
+          typeof child === 'string' ? renderTextWithCitations(child) : child,
+        )}
+      </li>
+    ),
+    ul: ({ ...props }) => <ul className="list-disc list-inside mb-3 space-y-1" {...props} />,
+    ol: ({ ...props }) => <ol className="list-decimal list-inside mb-3 space-y-1" {...props} />,
+    code: ({
+      inline,
+      ...props
+    }: React.HTMLAttributes<HTMLElement> & { inline?: boolean }) =>
+      inline ? (
+        <code className="bg-[var(--sea-light)]/60 text-[var(--ocean-deep)] px-1.5 py-0.5 rounded text-sm font-mono" {...props} />
+      ) : (
+        <code className="block bg-gray-100 dark:bg-gray-900 p-3 rounded-lg my-2 overflow-x-auto text-sm font-mono" {...props} />
+      ),
+    a: ({ ...props }) => (
+      <a
+        className="text-[var(--ocean)] hover:underline font-medium transition-colors"
+        target="_blank"
+        rel="noopener noreferrer"
+        {...props}
+      />
+    ),
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -167,22 +243,17 @@ function MessageBubbleInner({
         transition={{ delay: 0.1, type: 'spring', stiffness: 200 }}
       >
         <Avatar
-          className={`shrink-0 w-12 h-12 ${
+          className={`shrink-0 w-10 h-10 rounded-xl ${
             isUser
-              ? 'bg-linear-to-br from-blue-500 to-cyan-500'
-              : 'bg-linear-to-br from-purple-500 to-pink-500'
-          } shadow-xl`}
+              ? 'bg-[var(--ink)]'
+              : 'bg-[var(--ocean-deep)]'
+          } shadow-[var(--shadow-sm)]`}
         >
-          <AvatarFallback className="bg-transparent">
+          <AvatarFallback className="bg-transparent rounded-xl">
             {isUser ? (
-              <User className="w-5 h-5 text-white" />
+              <User className="w-4.5 h-4.5 text-white" />
             ) : (
-              <motion.div
-                animate={{ rotate: [0, 10, -10, 0] }}
-                transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-              >
-                <Sparkles className="w-5 h-5 text-white" />
-              </motion.div>
+              <Sparkles className="w-4.5 h-4.5 text-white" />
             )}
           </AvatarFallback>
         </Avatar>
@@ -198,7 +269,7 @@ function MessageBubbleInner({
             whileHover={{ scale: 1.01 }}
           >
             {isEditing ? (
-              <Card className="p-4 bg-linear-to-br from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 border-blue-200 dark:border-blue-800 shadow-xl rounded-2xl">
+              <Card className="p-4 bg-[var(--sea-light)]/40 border-[var(--ocean)]/20 shadow-[var(--shadow-md)] rounded-xl">
                 <Textarea
                   ref={editRef}
                   value={editValue}
@@ -222,7 +293,7 @@ function MessageBubbleInner({
                     variant="default"
                     size="sm"
                     onClick={handleSaveEdit}
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                    className="bg-[var(--ocean-deep)] hover:bg-[var(--ocean)] text-white"
                     aria-label="Save edit and re-search"
                   >
                     <Check className="w-4 h-4 mr-1" />
@@ -231,7 +302,7 @@ function MessageBubbleInner({
                 </div>
               </Card>
             ) : (
-              <Card className="p-5 bg-linear-to-br from-blue-500 to-cyan-500 text-white border-0 shadow-xl hover:shadow-2xl transition-shadow rounded-2xl relative">
+              <Card className="p-4 md:p-5 bg-[var(--ink)] text-white border-0 shadow-[var(--shadow-md)] rounded-xl relative">
                 <p className="text-base font-medium leading-relaxed pr-8">
                   {message.content}
                 </p>
@@ -263,7 +334,7 @@ function MessageBubbleInner({
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.1, duration: 0.3 }}
             >
-              <Card className="p-8 glass border-white/30 hover:shadow-2xl transition-all rounded-2xl relative">
+              <Card className="p-6 md:p-7 bg-[var(--paper)]/95 border-[var(--surface-border)] hover:shadow-[var(--shadow-md)] transition-all rounded-xl relative">
                 {/* Action buttons */}
                 <div className="absolute top-4 right-4 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <TooltipProvider delayDuration={300}>
@@ -336,39 +407,26 @@ function MessageBubbleInner({
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.3, duration: 0.5 }}
-                  className="prose prose-base dark:prose-invert max-w-none prose-headings:text-purple-900 dark:prose-headings:text-purple-300 prose-p:text-gray-700 dark:prose-p:text-gray-300 prose-a:text-purple-600 dark:prose-a:text-purple-400 prose-strong:text-purple-800 dark:prose-strong:text-purple-200"
+                  className="prose prose-base dark:prose-invert max-w-none prose-headings:font-display prose-headings:text-[var(--ink)] dark:prose-headings:text-[var(--ink)] prose-p:text-foreground/85 prose-a:text-[var(--ocean)] prose-strong:text-[var(--ink)]"
                 >
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
-                    components={{
-                      h1: ({ ...props }) => <h1 className="text-2xl font-bold mb-4" {...props} />,
-                      h2: ({ ...props }) => <h2 className="text-xl font-semibold mb-3" {...props} />,
-                      h3: ({ ...props }) => <h3 className="text-lg font-medium mb-2" {...props} />,
-                      p: ({ ...props }) => <p className="mb-3 leading-relaxed" {...props} />,
-                      ul: ({ ...props }) => <ul className="list-disc list-inside mb-3 space-y-1" {...props} />,
-                      ol: ({ ...props }) => <ol className="list-decimal list-inside mb-3 space-y-1" {...props} />,
-                      code: ({
-                        inline,
-                        ...props
-                      }: React.HTMLAttributes<HTMLElement> & { inline?: boolean }) =>
-                        inline ? (
-                          <code className="bg-purple-100 dark:bg-purple-900/30 px-1.5 py-0.5 rounded text-sm font-mono" {...props} />
-                        ) : (
-                          <code className="block bg-gray-100 dark:bg-gray-900 p-3 rounded-lg my-2 overflow-x-auto text-sm font-mono" {...props} />
-                        ),
-                      a: ({ ...props }) => (
-                        <a
-                          className="text-purple-600 dark:text-purple-400 hover:underline font-medium transition-colors"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          {...props}
-                        />
-                      ),
-                    }}
+                    components={markdownComponents()}
                   >
                     {message.content}
                   </ReactMarkdown>
                 </motion.div>
+
+                {message.degraded && (
+                  <div className="mt-4 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                    <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                    <span>
+                      Degraded response
+                      {message.degraded_reason ? ` (${message.degraded_reason})` : ''}.
+                      Configure API keys for full search quality.
+                    </span>
+                  </div>
+                )}
 
                 {/* Response time */}
                 {message.response_time_ms != null && (
@@ -379,6 +437,51 @@ function MessageBubbleInner({
                 )}
               </Card>
             </motion.div>
+
+            {/* Fact check */}
+            {message.fact_check_result?.claims && message.fact_check_result.claims.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.35, duration: 0.3 }}
+              >
+                <Card className="p-4 border-[var(--surface-border)] bg-[var(--paper)]/90 rounded-xl">
+                  <div className="flex items-center gap-2 mb-3">
+                    <ShieldCheck className="w-4 h-4 text-[var(--ocean)]" />
+                    <h3 className="text-sm font-semibold">Fact check</h3>
+                    {message.fact_check_result.overall_verdict && (
+                      <Badge
+                        className={`text-[10px] border-0 ${
+                          VERDICT_STYLES[message.fact_check_result.overall_verdict] ||
+                          VERDICT_STYLES.unverifiable
+                        }`}
+                      >
+                        {message.fact_check_result.overall_verdict.replace(/_/g, ' ')}
+                      </Badge>
+                    )}
+                  </div>
+                  <ul className="space-y-3">
+                    {message.fact_check_result.claims.map((claim, idx) => (
+                      <li key={idx} className="text-sm border-t border-[var(--surface-border)] pt-3 first:border-0 first:pt-0">
+                        <div className="flex items-start gap-2 mb-1">
+                          <Badge
+                            className={`text-[10px] shrink-0 border-0 ${
+                              VERDICT_STYLES[claim.verdict] || VERDICT_STYLES.unverifiable
+                            }`}
+                          >
+                            {claim.verdict.replace(/_/g, ' ')}
+                          </Badge>
+                          <p className="font-medium text-[var(--ink)]">{claim.claim}</p>
+                        </div>
+                        {claim.explanation && (
+                          <p className="text-xs text-muted-foreground pl-1">{claim.explanation}</p>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </Card>
+              </motion.div>
+            )}
 
             {/* Trust Score */}
             {message.trust_score !== undefined && (

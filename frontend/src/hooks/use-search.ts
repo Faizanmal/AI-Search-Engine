@@ -331,11 +331,12 @@ export function useDeleteCollection() {
 
 export function useAddQueryToCollection() {
   const queryClient = useQueryClient();
-  return useMutation<SearchCollection, Error, { collectionId: string; queryId: string }>({
+  return useMutation<{ status: string }, Error, { collectionId: string; queryId: string }>({
     mutationFn: ({ collectionId, queryId }) =>
       searchAPI.addQueryToCollection(collectionId, queryId),
-    onSuccess: (data) => {
-      queryClient.setQueryData(queryKeys.collection(data.id), data);
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.collections });
+      queryClient.invalidateQueries({ queryKey: queryKeys.collection(vars.collectionId) });
       toast.success('Query added to collection');
     },
     onError: (err) => handleError(err),
@@ -344,11 +345,12 @@ export function useAddQueryToCollection() {
 
 export function useAddCollaborator() {
   const queryClient = useQueryClient();
-  return useMutation<SearchCollection, Error, { collectionId: string; username: string }>({
+  return useMutation<{ status: string }, Error, { collectionId: string; username: string }>({
     mutationFn: ({ collectionId, username }) =>
       searchAPI.addCollaborator(collectionId, username),
-    onSuccess: (data) => {
-      queryClient.setQueryData(queryKeys.collection(data.id), data);
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.collections });
+      queryClient.invalidateQueries({ queryKey: queryKeys.collection(vars.collectionId) });
       toast.success('Collaborator added');
     },
     onError: (err) => handleError(err),
@@ -452,10 +454,10 @@ export function useDeleteAlert() {
 
 export function useCheckAlert() {
   const queryClient = useQueryClient();
-  return useMutation<TopicAlert, Error, string>({
+  return useMutation<AlertNotification, Error, string>({
     mutationFn: (id) => searchAPI.checkAlert(id),
-    onSuccess: (data) => {
-      queryClient.setQueryData(queryKeys.alert(data.id), data);
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.alerts });
       queryClient.invalidateQueries({ queryKey: queryKeys.notifications });
       toast.success('Alert checked — see notifications');
     },
@@ -478,7 +480,7 @@ export function useNotifications() {
 
 export function useMarkNotificationRead() {
   const queryClient = useQueryClient();
-  return useMutation<AlertNotification, Error, string>({
+  return useMutation<{ status: string }, Error, string>({
     mutationFn: (id) => searchAPI.markNotificationRead(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.notifications });

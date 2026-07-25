@@ -3,14 +3,14 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { formsApi } from "@/lib/api-client";
-import type { Form, FormField, FormSchema } from "@/types";
+import type { ConditionalLogic, Form, FormField, FormSchema } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Save, Eye, Trash2, GripVertical } from "lucide-react";
+import { Save, Eye, Trash2, GripVertical, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 export default function FormEditorPage() {
@@ -37,8 +37,20 @@ export default function FormEditorPage() {
   }, [formId, router]);
 
   useEffect(() => {
-    loadForm();
-  }, [formId, loadForm]);
+    const load = async () => {
+      try {
+        const data = await formsApi.get(formId);
+        setForm(data);
+        setSchema(data.schema_json);
+      } catch {
+        toast.error("Failed to load form");
+        router.push("/dashboard");
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, [formId, router]);
 
   const handleSave = async () => {
     if (!schema) return;
@@ -222,12 +234,17 @@ export default function FormEditorPage() {
                                 <SelectItem value="text">Text</SelectItem>
                                 <SelectItem value="email">Email</SelectItem>
                                 <SelectItem value="phone">Phone</SelectItem>
+                                <SelectItem value="url">URL</SelectItem>
                                 <SelectItem value="textarea">Textarea</SelectItem>
                                 <SelectItem value="number">Number</SelectItem>
                                 <SelectItem value="date">Date</SelectItem>
+                                <SelectItem value="time">Time</SelectItem>
                                 <SelectItem value="select">Select</SelectItem>
+                                <SelectItem value="multiselect">Multi-select</SelectItem>
                                 <SelectItem value="checkbox">Checkbox</SelectItem>
                                 <SelectItem value="radio">Radio</SelectItem>
+                                <SelectItem value="file">File upload</SelectItem>
+                                <SelectItem value="payment">Payment</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
@@ -251,6 +268,28 @@ export default function FormEditorPage() {
                               })}
                               placeholder="Option 1, Option 2, Option 3"
                             />
+                          </div>
+                        )}
+
+                        {field.type === 'payment' && (
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label>Amount (cents)</Label>
+                              <Input
+                                type="number"
+                                value={field.amount ?? 0}
+                                onChange={(e) =>
+                                  updateField(index, { amount: Number(e.target.value) || 0 })
+                                }
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Currency</Label>
+                              <Input
+                                value={field.currency || 'usd'}
+                                onChange={(e) => updateField(index, { currency: e.target.value })}
+                              />
+                            </div>
                           </div>
                         )}
 
@@ -286,6 +325,168 @@ export default function FormEditorPage() {
                   <p>No fields yet. Click &quot;Add Field&quot; to get started.</p>
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <CardTitle>Conditional Logic</CardTitle>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    const rule: ConditionalLogic = {
+                      if: {
+                        field: schema.fields[0]?.id || "",
+                        operator: "equals",
+                        value: "",
+                      },
+                      show: [],
+                      hide: [],
+                    };
+                    setSchema({
+                      ...schema,
+                      logic: [...(schema.logic || []), rule],
+                    });
+                  }}
+                  disabled={schema.fields.length === 0}
+                >
+                  <Plus className="mr-1 h-4 w-4" />
+                  Add Rule
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {(schema.logic || []).length === 0 && (
+                <p className="text-sm text-muted-foreground">
+                  Show or hide fields based on answers. Example: if Plan equals Pro, show Billing Email.
+                </p>
+              )}
+              {(schema.logic || []).map((rule, ruleIndex) => (
+                <Card key={ruleIndex} className="border">
+                  <CardContent className="pt-4 space-y-3">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div className="space-y-1">
+                        <Label>When field</Label>
+                        <Select
+                          value={rule.if.field}
+                          onValueChange={(value) => {
+                            const logic = [...(schema.logic || [])];
+                            logic[ruleIndex] = {
+                              ...rule,
+                              if: { ...rule.if, field: value },
+                            };
+                            setSchema({ ...schema, logic });
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Field" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {schema.fields.map((f) => (
+                              <SelectItem key={f.id} value={f.id}>
+                                {f.label || f.id}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1">
+                        <Label>Operator</Label>
+                        <Select
+                          value={rule.if.operator}
+                          onValueChange={(value) => {
+                            const logic = [...(schema.logic || [])];
+                            logic[ruleIndex] = {
+                              ...rule,
+                              if: {
+                                ...rule.if,
+                                operator: value as ConditionalLogic["if"]["operator"],
+                              },
+                            };
+                            setSchema({ ...schema, logic });
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="equals">Equals</SelectItem>
+                            <SelectItem value="in">In list</SelectItem>
+                            <SelectItem value="contains">Contains</SelectItem>
+                            <SelectItem value="gte">≥</SelectItem>
+                            <SelectItem value="lte">≤</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1">
+                        <Label>Value</Label>
+                        <Input
+                          value={String(rule.if.value ?? "")}
+                          onChange={(e) => {
+                            const logic = [...(schema.logic || [])];
+                            logic[ruleIndex] = {
+                              ...rule,
+                              if: { ...rule.if, value: e.target.value },
+                            };
+                            setSchema({ ...schema, logic });
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label>Show fields (IDs, comma-separated)</Label>
+                        <Input
+                          value={(rule.show || []).join(", ")}
+                          onChange={(e) => {
+                            const logic = [...(schema.logic || [])];
+                            logic[ruleIndex] = {
+                              ...rule,
+                              show: e.target.value
+                                .split(",")
+                                .map((s) => s.trim())
+                                .filter(Boolean),
+                            };
+                            setSchema({ ...schema, logic });
+                          }}
+                          placeholder={schema.fields.map((f) => f.id).join(", ")}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label>Hide fields (IDs, comma-separated)</Label>
+                        <Input
+                          value={(rule.hide || []).join(", ")}
+                          onChange={(e) => {
+                            const logic = [...(schema.logic || [])];
+                            logic[ruleIndex] = {
+                              ...rule,
+                              hide: e.target.value
+                                .split(",")
+                                .map((s) => s.trim())
+                                .filter(Boolean),
+                            };
+                            setSchema({ ...schema, logic });
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-500"
+                      onClick={() => {
+                        const logic = (schema.logic || []).filter((_, i) => i !== ruleIndex);
+                        setSchema({ ...schema, logic });
+                      }}
+                    >
+                      <Trash2 className="mr-1 h-4 w-4" />
+                      Remove rule
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
             </CardContent>
           </Card>
         </div>

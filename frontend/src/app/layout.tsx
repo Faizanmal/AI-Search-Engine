@@ -1,13 +1,20 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Syne, DM_Sans, Geist_Mono } from "next/font/google";
 import { Navigation } from "@/components/Navigation";
 import { Providers } from "@/components/Providers";
 import { Toaster } from "sonner";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const syne = Syne({
+  variable: "--font-syne",
   subsets: ["latin"],
+  weight: ["500", "600", "700", "800"],
+});
+
+const dmSans = DM_Sans({
+  variable: "--font-dm-sans",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
 const geistMono = Geist_Mono({
@@ -16,13 +23,21 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Advanced Search Engine - AI-Powered Search & Forms",
-  description: "Get accurate, well-researched answers with AI-powered search. Create intelligent forms with advanced analytics. Built with cutting-edge AI technology.",
-  keywords: ["AI search", "intelligent search", "form builder", "AI forms", "search engine", "web search"],
-  authors: [{ name: "Advanced Search Engine Team" }],
+  title: "Atlas Search — AI answers with sources you can trust",
+  description:
+    "Ask anything and get researched answers with citations, trust scores, and intelligent forms — built for clarity, not noise.",
+  keywords: [
+    "AI search",
+    "intelligent search",
+    "citations",
+    "form builder",
+    "search engine",
+  ],
+  authors: [{ name: "Atlas Search" }],
   openGraph: {
-    title: "Advanced Search Engine - AI-Powered Search & Forms",
-    description: "Get accurate, well-researched answers with AI-powered search. Create intelligent forms in seconds.",
+    title: "Atlas Search — AI answers with sources you can trust",
+    description:
+      "Researched answers with citations, trust scores, and intelligent forms.",
     type: "website",
   },
 };
@@ -33,14 +48,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="light" style={{ colorScheme: 'light' }}>
+    <html lang="en" className="light" style={{ colorScheme: "light" }}>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-background text-foreground`}
+        className={`${syne.variable} ${dmSans.variable} ${geistMono.variable} font-sans antialiased min-h-screen bg-background text-foreground`}
       >
         <Providers>
           <a
             href="#main-content"
-            className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-white focus:text-black dark:focus:bg-gray-900 dark:focus:text-white"
+            className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:m-3 focus:rounded-md focus:px-4 focus:py-2 focus:bg-white focus:text-[var(--ink)] focus:shadow-md"
           >
             Skip to main content
           </a>
@@ -48,19 +63,19 @@ export default function RootLayout({
           <main
             id="main-content"
             role="main"
-            className="relative min-h-screen pt-20 md:pt-24"
+            className="relative min-h-screen pt-16"
           >
             {children}
           </main>
-          <Toaster 
-            position="top-right" 
-            richColors 
+          <Toaster
+            position="top-right"
+            richColors
             closeButton
             toastOptions={{
               style: {
-                background: 'var(--glass-background)',
-                backdropFilter: 'blur(10px)',
-                border: '1px solid var(--glass-border)',
+                background: "var(--surface)",
+                backdropFilter: "blur(10px)",
+                border: "1px solid var(--surface-border)",
               },
             }}
           />

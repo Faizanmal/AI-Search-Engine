@@ -53,14 +53,14 @@ import type { TrendSnapshot } from '@/types/search';
 const PERIOD_OPTIONS = [7, 14, 30] as const;
 
 const PIE_COLORS = [
-  '#8b5cf6',
-  '#3b82f6',
-  '#10b981',
-  '#f59e0b',
-  '#ef4444',
-  '#ec4899',
-  '#14b8a6',
-  '#f97316',
+  '#176b86',
+  '#0e4f66',
+  '#1f8a5c',
+  '#f05a2b',
+  '#243447',
+  '#1a8a9e',
+  '#d4471c',
+  '#5a7a8a',
 ];
 
 // ---------------------------------------------------------------------------
@@ -145,8 +145,8 @@ export default function TrendsPage() {
   const modes = aggregateModes(snapshots ?? []);
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-slate-50 via-purple-50/30 to-blue-50/30 dark:from-gray-950 dark:via-purple-950/10 dark:to-blue-950/10">
-      <div className="container mx-auto px-4 py-8 max-w-7xl space-y-8">
+    <div className="min-h-screen app-atmosphere">
+      <div className="page-shell-inner max-w-7xl space-y-8">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -154,11 +154,11 @@ export default function TrendsPage() {
           className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
         >
           <div>
-            <h1 className="text-3xl font-bold bg-linear-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent flex items-center gap-2">
-              <TrendingUp className="w-8 h-8 text-purple-600" />
+            <h1 className="page-title flex items-center gap-2">
+              <TrendingUp className="w-7 h-7 text-[var(--ocean)]" />
               Search Trends
             </h1>
-            <p className="text-muted-foreground mt-1">
+            <p className="page-subtitle">
               Discover what&apos;s trending across the platform
             </p>
           </div>
@@ -172,8 +172,8 @@ export default function TrendsPage() {
                 onClick={() => setDays(p)}
                 className={
                   days === p
-                    ? 'bg-linear-to-r from-purple-600 to-blue-600 text-white'
-                    : ''
+                    ? 'bg-[var(--ocean-deep)] hover:bg-[var(--ocean)] text-white rounded-lg'
+                    : 'rounded-lg'
                 }
               >
                 {p}d
@@ -185,7 +185,7 @@ export default function TrendsPage() {
         {/* Loading / Error */}
         {isLoading && (
           <div className="flex items-center justify-center py-24">
-            <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
+            <Loader2 className="w-8 h-8 animate-spin text-[var(--ocean)]" />
           </div>
         )}
 
@@ -205,19 +205,19 @@ export default function TrendsPage() {
                   label: 'Total Queries',
                   value: totalVolume.toLocaleString(),
                   icon: Search,
-                  color: 'text-purple-600',
+                  color: 'text-[var(--ocean)]',
                 },
                 {
                   label: 'Avg Trust Score',
                   value: `${avgTrust}%`,
                   icon: ShieldCheck,
-                  color: 'text-green-600',
+                  color: 'text-emerald-600',
                 },
                 {
                   label: 'Active Users',
                   value: totalUsers.toLocaleString(),
                   icon: Users,
-                  color: 'text-blue-600',
+                  color: 'text-[var(--ocean-deep)]',
                 },
                 {
                   label: 'Avg Response',
@@ -232,7 +232,7 @@ export default function TrendsPage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.1 }}
                 >
-                  <Card className="glass">
+                  <Card className="bg-[var(--paper)]/90 border-[var(--surface-border)] rounded-xl shadow-[var(--shadow-sm)]">
                     <CardContent className="pt-6 flex items-center gap-4">
                       <div
                         className={`w-12 h-12 rounded-xl flex items-center justify-center bg-opacity-10 ${stat.color} bg-current/10`}
@@ -241,7 +241,7 @@ export default function TrendsPage() {
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">{stat.label}</p>
-                        <p className="text-2xl font-bold">{stat.value}</p>
+                        <p className="font-display text-2xl font-bold">{stat.value}</p>
                       </div>
                     </CardContent>
                   </Card>
@@ -257,10 +257,10 @@ export default function TrendsPage() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.2 }}
               >
-                <Card className="glass">
+                <Card className="bg-[var(--paper)]/90 border-[var(--surface-border)] rounded-xl shadow-[var(--shadow-sm)]">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-lg">
-                      <BarChart3 className="w-5 h-5 text-purple-600" />
+                      <BarChart3 className="w-5 h-5 text-[var(--ocean)]" />
                       Daily Query Volume
                     </CardTitle>
                   </CardHeader>
@@ -270,8 +270,8 @@ export default function TrendsPage() {
                         <AreaChart data={volumeData}>
                           <defs>
                             <linearGradient id="volGrad" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3} />
-                              <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
+                              <stop offset="5%" stopColor="#176b86" stopOpacity={0.3} />
+                              <stop offset="95%" stopColor="#176b86" stopOpacity={0} />
                             </linearGradient>
                           </defs>
                           <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
@@ -281,7 +281,7 @@ export default function TrendsPage() {
                           <Area
                             type="monotone"
                             dataKey="volume"
-                            stroke="#8b5cf6"
+                            stroke="#176b86"
                             fill="url(#volGrad)"
                             strokeWidth={2}
                           />
@@ -298,10 +298,10 @@ export default function TrendsPage() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.3 }}
               >
-                <Card className="glass">
+                <Card className="bg-[var(--paper)]/90 border-[var(--surface-border)] rounded-xl shadow-[var(--shadow-sm)]">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-lg">
-                      <Search className="w-5 h-5 text-blue-600" />
+                      <Search className="w-5 h-5 text-[var(--ocean)]" />
                       Search Mode Distribution
                     </CardTitle>
                   </CardHeader>
@@ -350,10 +350,10 @@ export default function TrendsPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
               >
-                <Card className="glass">
+                <Card className="bg-[var(--paper)]/90 border-[var(--surface-border)] rounded-xl shadow-[var(--shadow-sm)]">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-lg">
-                      <TrendingUp className="w-5 h-5 text-green-600" />
+                      <TrendingUp className="w-5 h-5 text-emerald-600" />
                       Trending Topics
                     </CardTitle>
                   </CardHeader>
@@ -366,8 +366,8 @@ export default function TrendsPage() {
                             variant={i < 5 ? 'default' : 'outline'}
                             className={
                               i < 5
-                                ? 'bg-linear-to-r from-purple-600 to-blue-600 text-white'
-                                : ''
+                                ? 'bg-[var(--ocean-deep)] text-white rounded-lg'
+                                : 'rounded-lg'
                             }
                           >
                             {t.topic}{' '}
@@ -390,7 +390,7 @@ export default function TrendsPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 }}
               >
-                <Card className="glass">
+                <Card className="bg-[var(--paper)]/90 border-[var(--surface-border)] rounded-xl shadow-[var(--shadow-sm)]">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-lg">
                       <Globe className="w-5 h-5 text-amber-600" />
@@ -416,7 +416,7 @@ export default function TrendsPage() {
                             <Tooltip />
                             <Bar
                               dataKey="count"
-                              fill="#3b82f6"
+                              fill="#176b86"
                               radius={[0, 6, 6, 0]}
                             />
                           </BarChart>

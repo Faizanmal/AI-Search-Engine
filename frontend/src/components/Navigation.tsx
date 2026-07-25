@@ -1,21 +1,12 @@
 /**
- * Navigation — top navigation bar with links to all major features.
- *
- * Features
- * --------
- * - Fixed glass-morphism header
- * - Desktop + responsive mobile menu
- * - Links: Home, Search, Analytics, Dashboard
- * - Action buttons: History sidebar, Bookmarks panel, Export, Settings
- * - Theme toggle (next-themes)
- * - Auth links (Login / Sign Up) or user avatar
+ * Navigation — fixed product chrome for Atlas Search.
  */
 
 'use client';
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -25,7 +16,6 @@ import {
   LayoutDashboard,
   Menu,
   X,
-  Sparkles,
   LogIn,
   UserPlus,
   Moon,
@@ -57,30 +47,35 @@ export function Navigation() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { theme, setTheme } = useTheme();
   const pathname = usePathname();
+  const router = useRouter();
 
-  // Panel / dialog state
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isBookmarksOpen, setIsBookmarksOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 10);
+    const handleScroll = () => setIsScrolled(window.scrollY > 8);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const navItems = [
+  const primaryNav = [
     { href: '/', label: 'Home', icon: Home },
     { href: '/search', label: 'Search', icon: Search },
     { href: '/analytics', label: 'Analytics', icon: BarChart3 },
     { href: '/collections', label: 'Collections', icon: FolderOpen },
+    { href: '/dashboard', label: 'Forms', icon: LayoutDashboard },
+  ];
+
+  const moreNav = [
     { href: '/plugins', label: 'Plugins', icon: Puzzle },
     { href: '/alerts', label: 'Alerts', icon: Bell },
     { href: '/trends', label: 'Trends', icon: TrendingUp },
     { href: '/api-keys', label: 'API Keys', icon: Key },
-    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   ];
+
+  const navItems = [...primaryNav, ...moreNav];
 
   const toggleTheme = () => {
     setTheme(theme === 'dark' ? 'light' : 'dark');
@@ -89,224 +84,164 @@ export function Navigation() {
   return (
     <>
       <motion.nav
-        initial={{ y: -100 }}
-        animate={{ y: 0 }}
-        transition={{ duration: 0.5, ease: 'easeOut' }}
+        initial={{ y: -24, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
           isScrolled
-            ? 'glass-strong backdrop-blur-xl shadow-lg border-b border-border/70'
-            : 'bg-background/85 backdrop-blur-lg border-b border-border/50'
+            ? 'bg-[var(--paper)]/90 backdrop-blur-md border-b border-[var(--surface-border)] shadow-[var(--shadow-sm)]'
+            : 'bg-[var(--paper)]/70 backdrop-blur-sm border-b border-transparent'
         }`}
         role="navigation"
         aria-label="Main navigation"
       >
         <div className="mx-auto w-full max-w-7xl px-3 sm:px-5 lg:px-7">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <Link href="/" aria-label="Go to homepage">
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="flex items-center gap-2 cursor-pointer"
-              >
-                <motion.div
-                  animate={{ rotate: [0, 10, -10, 0] }}
-                  transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-                  className="w-8 h-8 md:w-10 md:h-10 bg-linear-to-br from-purple-600 to-blue-600 rounded-xl flex items-center justify-center shadow-lg"
-                >
-                  <Sparkles className="w-4 h-4 md:w-6 md:h-6 text-white" />
-                </motion.div>
-                <span className="text-lg md:text-xl font-bold bg-linear-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                  SearchEngine
-                </span>
-              </motion.div>
+          <div className="flex items-center justify-between h-16 gap-3">
+            <Link href="/" aria-label="Atlas Search home" className="shrink-0">
+              <div className="flex items-center gap-2.5 group">
+                <div className="relative w-9 h-9 rounded-lg bg-[var(--ocean-deep)] flex items-center justify-center overflow-hidden transition-transform duration-300 group-hover:scale-[1.03]">
+                  <span className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(197,228,239,0.35),transparent_60%)]" />
+                  <Search className="relative w-4.5 h-4.5 text-white" strokeWidth={2.25} />
+                </div>
+                <div className="leading-none">
+                  <span className="font-display text-lg font-bold tracking-tight text-[var(--ink)]">
+                    Atlas
+                  </span>
+                  <span className="font-display text-lg font-medium tracking-tight text-[var(--ocean)] ml-1">
+                    Search
+                  </span>
+                </div>
+              </div>
             </Link>
 
-            {/* Desktop Navigation Links */}
-            <div className="hidden lg:flex items-center gap-1 xl:gap-1.5 min-w-0">
-              {navItems.map((item, index) => {
+            <div className="hidden lg:flex items-center gap-0.5 min-w-0">
+              {primaryNav.map((item) => {
                 const isActive = pathname === item.href;
                 return (
                   <Link key={item.href} href={item.href}>
-                    <motion.div
-                      initial={{ opacity: 0, y: -20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.1, duration: 0.3 }}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={`relative font-medium px-2.5 xl:px-3 rounded-md ${
+                        isActive
+                          ? 'text-[var(--ocean-deep)] bg-[var(--sea-light)]/60'
+                          : 'text-muted-foreground hover:text-foreground hover:bg-secondary/80'
+                      }`}
                     >
-                      <Button
-                        variant={isActive ? 'default' : 'ghost'}
-                        size="sm"
-                        className={`relative font-medium transition-all duration-300 px-2 xl:px-3 ${
-                          isActive
-                            ? 'bg-linear-to-r from-teal-600 to-cyan-700 text-white shadow-lg'
-                            : 'hover:bg-accent/70'
-                        }`}
-                      >
-                        <item.icon className="w-4 h-4 xl:mr-2" />
-                        <span className="hidden xl:inline">{item.label}</span>
-                        {isActive && (
-                          <motion.div
-                            layoutId="activeTab"
-                            className="absolute inset-0 bg-linear-to-r from-teal-600 to-cyan-700 rounded-md -z-10"
-                            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                          />
-                        )}
-                      </Button>
-                    </motion.div>
+                      <item.icon className="w-4 h-4 xl:mr-1.5" />
+                      <span className="hidden xl:inline">{item.label}</span>
+                      {isActive && (
+                        <motion.span
+                          layoutId="nav-underline"
+                          className="absolute bottom-0 left-2 right-2 h-0.5 rounded-full bg-[var(--signal)]"
+                        />
+                      )}
+                    </Button>
                   </Link>
                 );
               })}
             </div>
 
-            {/* Desktop Actions */}
-            <div className="hidden lg:flex items-center gap-0.5 xl:gap-1">
-              <TooltipProvider delayDuration={300}>
-                {/* History */}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setIsHistoryOpen(true)}
-                      className="rounded-full"
-                      aria-label="Open search history"
-                    >
-                      <History className="w-5 h-5" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Search History</TooltipContent>
-                </Tooltip>
+            <div className="hidden lg:flex items-center gap-0.5">
+              <TooltipProvider delayDuration={250}>
+                {[
+                  { label: 'Search History', icon: History, action: () => setIsHistoryOpen(true) },
+                  { label: 'Bookmarks', icon: Bookmark, action: () => setIsBookmarksOpen(true) },
+                  { label: 'Export', icon: Download, action: () => setIsExportOpen(true) },
+                  { label: 'Settings', icon: Settings, action: () => setIsSettingsOpen(true) },
+                ].map((action) => (
+                  <Tooltip key={action.label}>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={action.action}
+                        className="rounded-md text-muted-foreground hover:text-foreground"
+                        aria-label={action.label}
+                      >
+                        <action.icon className="w-4.5 h-4.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>{action.label}</TooltipContent>
+                  </Tooltip>
+                ))}
 
-                {/* Bookmarks */}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setIsBookmarksOpen(true)}
-                      className="rounded-full"
-                      aria-label="Open bookmarks"
-                    >
-                      <Bookmark className="w-5 h-5" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Bookmarks</TooltipContent>
-                </Tooltip>
-
-                {/* Export */}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setIsExportOpen(true)}
-                      className="rounded-full"
-                      aria-label="Export search data"
-                    >
-                      <Download className="w-5 h-5" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Export</TooltipContent>
-                </Tooltip>
-
-                {/* Settings */}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setIsSettingsOpen(true)}
-                      className="rounded-full"
-                      aria-label="Open settings"
-                    >
-                      <Settings className="w-5 h-5" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Settings</TooltipContent>
-                </Tooltip>
-
-                {/* Theme toggle */}
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={toggleTheme}
-                      className="rounded-full"
+                      className="rounded-md text-muted-foreground hover:text-foreground"
                       aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
                     >
-                      {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                      {theme === 'dark' ? <Sun className="w-4.5 h-4.5" /> : <Moon className="w-4.5 h-4.5" />}
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>{theme === 'dark' ? 'Light mode' : 'Dark mode'}</TooltipContent>
                 </Tooltip>
               </TooltipProvider>
 
-              <div className="w-px h-6 bg-border mx-1 hidden xl:block" />
+              <div className="w-px h-5 bg-border mx-1.5" />
 
               <Link href="/login" className="hidden xl:inline-flex">
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Button variant="ghost" size="sm">
-                    <LogIn className="w-4 h-4 mr-2" />
-                    <span>Login</span>
-                  </Button>
-                </motion.div>
+                <Button variant="ghost" size="sm" className="text-muted-foreground">
+                  <LogIn className="w-4 h-4 mr-1.5" />
+                  Login
+                </Button>
               </Link>
 
               <Link href="/register" className="hidden xl:inline-flex">
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Button variant="gradient" size="sm" className="font-semibold">
-                    <UserPlus className="w-4 h-4 mr-2" />
-                    <span>Sign Up</span>
-                  </Button>
-                </motion.div>
+                <Button
+                  size="sm"
+                  className="font-semibold bg-[var(--signal)] hover:bg-[var(--signal-deep)] text-white rounded-md"
+                >
+                  <UserPlus className="w-4 h-4 mr-1.5" />
+                  Sign Up
+                </Button>
               </Link>
             </div>
 
-            {/* Mobile Menu Button */}
-            <motion.div className="md:hidden" whileTap={{ scale: 0.9 }}>
+            <div className="lg:hidden">
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
                 aria-expanded={isMobileMenuOpen}
+                className="rounded-md"
               >
-                {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
               </Button>
-            </motion.div>
+            </div>
           </div>
         </div>
 
-        {/* Mobile Menu */}
         <AnimatePresence>
           {isMobileMenuOpen && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.3 }}
-              className="md:hidden glass-strong backdrop-blur-xl border-t"
+              transition={{ duration: 0.28 }}
+              className="lg:hidden border-t border-[var(--surface-border)] bg-[var(--paper)]"
             >
-              <div className="container mx-auto px-4 py-4 space-y-2">
+              <div className="mx-auto max-w-7xl px-4 py-4 space-y-1">
                 {navItems.map((item, index) => {
                   const isActive = pathname === item.href;
                   return (
                     <motion.div
                       key={item.href}
-                      initial={{ opacity: 0, x: -20 }}
+                      initial={{ opacity: 0, x: -12 }}
                       animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.1, duration: 0.3 }}
+                      transition={{ delay: index * 0.03 }}
                     >
                       <Link href={item.href} onClick={() => setIsMobileMenuOpen(false)}>
                         <Button
-                          variant={isActive ? 'default' : 'ghost'}
-                          size="default"
-                          className={`w-full justify-start font-medium ${
+                          variant="ghost"
+                          className={`w-full justify-start font-medium rounded-md ${
                             isActive
-                              ? 'bg-linear-to-r from-purple-600 to-blue-600 text-white shadow-lg'
+                              ? 'bg-[var(--sea-light)]/70 text-[var(--ocean-deep)]'
                               : ''
                           }`}
                         >
@@ -318,7 +253,7 @@ export function Navigation() {
                   );
                 })}
 
-                <div className="pt-2 border-t space-y-2">
+                <div className="pt-3 mt-2 border-t border-[var(--surface-border)] space-y-1">
                   <Button
                     variant="ghost"
                     className="w-full justify-start"
@@ -330,7 +265,6 @@ export function Navigation() {
                     <History className="w-4 h-4 mr-2" />
                     Search History
                   </Button>
-
                   <Button
                     variant="ghost"
                     className="w-full justify-start"
@@ -342,7 +276,6 @@ export function Navigation() {
                     <Bookmark className="w-4 h-4 mr-2" />
                     Bookmarks
                   </Button>
-
                   <Button
                     variant="ghost"
                     className="w-full justify-start"
@@ -354,7 +287,6 @@ export function Navigation() {
                     <Download className="w-4 h-4 mr-2" />
                     Export
                   </Button>
-
                   <Button
                     variant="ghost"
                     className="w-full justify-start"
@@ -366,12 +298,7 @@ export function Navigation() {
                     <Settings className="w-4 h-4 mr-2" />
                     Settings
                   </Button>
-
-                  <Button
-                    variant="ghost"
-                    onClick={toggleTheme}
-                    className="w-full justify-start"
-                  >
+                  <Button variant="ghost" onClick={toggleTheme} className="w-full justify-start">
                     {theme === 'dark' ? (
                       <Sun className="w-4 h-4 mr-2" />
                     ) : (
@@ -381,16 +308,15 @@ export function Navigation() {
                   </Button>
                 </div>
 
-                <div className="pt-2 border-t space-y-2">
+                <div className="pt-3 mt-2 border-t border-[var(--surface-border)] space-y-2">
                   <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>
                     <Button variant="ghost" className="w-full justify-start">
                       <LogIn className="w-4 h-4 mr-2" />
                       Login
                     </Button>
                   </Link>
-
                   <Link href="/register" onClick={() => setIsMobileMenuOpen(false)}>
-                    <Button variant="gradient" className="w-full font-semibold">
+                    <Button className="w-full font-semibold bg-[var(--signal)] hover:bg-[var(--signal-deep)] text-white">
                       <UserPlus className="w-4 h-4 mr-2" />
                       Sign Up
                     </Button>
@@ -402,17 +328,22 @@ export function Navigation() {
         </AnimatePresence>
       </motion.nav>
 
-      {/* Spacer */}
-      <div className="h-16" />
-
-      {/* Panels & Dialogs */}
       <SearchHistorySidebar
         isOpen={isHistoryOpen}
         onClose={() => setIsHistoryOpen(false)}
+        onSelectEntry={(entry) => {
+          setIsHistoryOpen(false);
+          router.push(`/search?history=${entry.id}`);
+        }}
       />
       <BookmarksPanel
         isOpen={isBookmarksOpen}
         onClose={() => setIsBookmarksOpen(false)}
+        onSelectBookmark={(bookmark) => {
+          setIsBookmarksOpen(false);
+          const id = bookmark.search_query?.id;
+          if (id) router.push(`/search?history=${id}`);
+        }}
       />
       <ExportDialog open={isExportOpen} onOpenChange={setIsExportOpen} />
       <SettingsDialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen} />
